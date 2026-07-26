@@ -10,4 +10,3 @@ htmlcov
 fin_asset_agent/config.yaml
 fin_asset_agent/memory/*.db
 fin_asset_agent/data_ops/cache
-docs

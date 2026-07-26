@@ -28,13 +28,12 @@ FinAgentOS/
 │  ├─ memory/              # SQLite/SQLAlchemy 状态与模型
 │  ├─ skills/              # 可调度的数据技能
 │  └─ tests/               # 自动化测试
-├─ docs/                   # 迭代说明与路线图（不参与运行）
 ├─ .github/workflows/ci.yml
 ├─ Dockerfile
 └─ requirements.txt
 ```
 
-历史 HTML 已统一归档到 [`docs/`](docs/README.md)。运行时页面始终是 `fin_asset_agent/index.html`。
+运行时页面是 `fin_asset_agent/index.html`，由 FastAPI 的 `/` 路径直接提供。
 
 ## 本地运行（隔离 Python 环境）
 
@@ -101,7 +100,7 @@ Set-Location fin_asset_agent
 
 macOS/Linux 将解释器路径替换为 `../.venv/bin/python`。
 
-当前导入基线：`269 passed`。
+当前测试基线：`269 passed`。
 
 ## Docker 部署
 
