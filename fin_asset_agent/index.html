@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinAgent OS - 现代智能资产配置</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=SF+Pro+Display:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            background: radial-gradient(100% 100% at 50% 0%, #FFFFFF 0%, #F1F5F9 100%);
+        }
+        .font-display { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 高级纯白微悬浮面板 */
+        .white-panel {
+            background: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.05);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.01), 0 10px 30px -10px rgba(15, 23, 42, 0.03);
+        }
+
+        /* 纯黑冷冽聚焦光晕 */
+        .input-glow:focus-within {
+            border-color: #0F172A;
+            box-shadow: 0 0 0 1px #0F172A;
+        }
+
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+        .animate-pulse-subtle { animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body class="h-full text-slate-900 antialiased overflow-hidden select-none">
+
+    <div class="flex h-full w-full">
+        <aside class="w-64 border-r border-slate-200/60 bg-white flex flex-col justify-between p-6 shrink-0 hidden md:flex">
+            <div class="space-y-8">
+                <div class="flex items-center space-x-3">
+                    <div class="w-7 h-7 rounded bg-slate-900 flex items-center justify-center text-white font-display font-extrabold text-sm shadow-sm">
+                        Ω
+                    </div>
+                    <div>
+                        <h1 class="text-sm font-display font-bold text-slate-900 tracking-wide">FinAgent OS</h1>
+                        <p class="text-sm font-mono text-slate-400 uppercase tracking-widest mt-0.5">V3.4.1 Kernel</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="border-t border-slate-100 pt-4 space-y-2">
+                <div class="relative group input-glow rounded-xl transition-all duration-300 bg-slate-50 border border-slate-200 flex items-center px-3 py-2.5">
+                    <svg class="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                    <input type="text" id="apiKey" placeholder="DeepSeek / 兼容服务 API Key"
+                           class="bg-transparent text-sm w-full focus:outline-none text-slate-700 placeholder-slate-300 font-mono tracking-wider">
+                </div>
+                <div class="relative rounded-xl bg-slate-50 border border-slate-200 flex items-center px-3 py-2.5">
+                    <svg class="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"></path></svg>
+                    <input type="text" id="baseUrl" placeholder="接口地址（留空=DeepSeek 默认）"
+                           class="bg-transparent text-sm w-full focus:outline-none text-slate-700 placeholder-slate-300 font-mono tracking-wider">
+                </div>
+                <div class="relative rounded-xl bg-slate-50 border border-slate-200 flex items-center px-3 py-2.5">
+                    <svg class="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    <input type="text" id="modelId" placeholder="模型 ID（留空=按角色默认）"
+                           class="bg-transparent text-sm w-full focus:outline-none text-slate-700 placeholder-slate-300 font-mono tracking-wider">
+                </div>
+                <button type="button" id="advToggle" onclick="toggleAdvancedLLM()"
+                        class="text-sm text-slate-400 hover:text-slate-600 font-mono flex items-center gap-1 pl-1 transition-colors">
+                    <span id="advCaret">▸</span> 高级（分档模型覆盖）
+                </button>
+                <div id="advLLM" class="hidden space-y-2 pl-1">
+                    <input type="text" id="routerModel" placeholder="router 模型（意图分类）"
+                           class="bg-slate-50 border border-slate-200 rounded-lg text-sm w-full focus:outline-none text-slate-700 placeholder-slate-300 font-mono tracking-wider px-3 py-2">
+                    <input type="text" id="chatModel" placeholder="chat 模型（闲聊/问答）"
+                           class="bg-slate-50 border border-slate-200 rounded-lg text-sm w-full focus:outline-none text-slate-700 placeholder-slate-300 font-mono tracking-wider px-3 py-2">
+                    <input type="text" id="primaryModel" placeholder="primary 模型（推理/风控/选品）"
+                           class="bg-slate-50 border border-slate-200 rounded-lg text-sm w-full focus:outline-none text-slate-700 placeholder-slate-300 font-mono tracking-wider px-3 py-2">
+                </div>
+            </div>
+
+            <!-- 🆕 6-3：Telegram 主动推送绑定 -->
+            <div class="border-t border-slate-100 pt-4 mt-4 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-mono text-slate-400 uppercase tracking-wider">Telegram 推送</span>
+                    <span id="tgStatus" class="text-sm font-mono text-slate-300">—</span>
+                </div>
+                <div class="relative rounded-xl bg-slate-50 border border-slate-200 flex items-center px-3 py-2.5">
+                    <svg class="w-3.5 h-3.5 text-slate-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+                    <input type="text" id="tgChatId" placeholder="你的 Telegram chat id"
+                           class="bg-transparent text-sm w-full focus:outline-none text-slate-700 placeholder-slate-300 font-mono tracking-wider">
+                </div>
+                <button type="button" onclick="bindTelegram()"
+                        class="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-3 py-2 rounded-lg transition-all active:scale-[0.98]">
+                    绑定并发送测试消息
+                </button>
+                <p id="tgHint" class="text-sm font-mono text-slate-300 leading-relaxed">先和你的 bot 发一句话，再填 chat id 绑定。</p>
+
+                <!-- 🆕 系统代理开关：打开后 Telegram / 外网行情走系统代理（自动连接） -->
+                <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5 mt-1">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="text-sm font-medium text-slate-700">系统代理</div>
+                            <div id="proxyDetected" class="text-sm font-mono text-slate-400 truncate">检测中…</div>
+                        </div>
+                        <button type="button" id="proxyToggle" role="switch" aria-checked="false" onclick="toggleProxy()"
+                                class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-slate-300 transition-colors">
+                            <span id="proxyKnob" class="inline-block h-4 w-4 transform rounded-full bg-white shadow translate-x-0.5 transition-transform"></span>
+                        </button>
+                    </div>
+                    <p id="proxyHint" class="text-sm font-mono text-slate-300 leading-relaxed mt-1">打开后 Telegram 推送与海外行情走系统代理；A 股行情始终直连。</p>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar">
+            <header class="h-16 border-b border-slate-200/60 bg-white/60 backdrop-blur-md flex items-center justify-between px-8 shrink-0 sticky top-0 z-50">
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm font-mono text-slate-400">Workspace</span>
+                    <span class="text-sm font-mono text-slate-300">/</span>
+                    <span class="text-sm font-mono text-slate-600">Asset Allocation Console</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm font-mono text-slate-400" id="clock">SYSTEM ONLINE</span>
+                </div>
+            </header>
+
+            <div class="flex-1 p-6 lg:p-8 space-y-6 max-w-[1600px] w-full mx-auto">
+
+                <!-- 标签切换栏 -->
+                <div id="tabBar" class="flex items-center gap-1 bg-slate-100 rounded-xl p-1 w-fit">
+                    <button id="tabBtn1" onclick="switchTab(1)" class="text-sm font-mono font-bold px-5 py-2.5 rounded-lg bg-white text-slate-900 shadow-sm transition-all">📋 画像 & 对话</button>
+                    <button id="tabBtn2" onclick="switchTab(2)" class="text-sm font-mono px-5 py-2.5 rounded-lg text-slate-500 hover:text-slate-700 transition-all">
+                        🕐 历史方案
+                        <span id="tabHistoryBadge" class="text-sm opacity-50 ml-1">0</span>
+                    </button>
+                    <button id="tabBtn3" onclick="switchTab(3)" class="text-sm font-mono px-5 py-2.5 rounded-lg text-slate-500 hover:text-slate-700 transition-all">
+                        📊 配置报告
+                        <span id="tabResultBadge" class="hidden ml-1 w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block align-middle"></span>
+                    </button>
+                </div>
+
+                <!-- Tab 1: 画像 & 对话 -->
+                <div id="tabPanel1" class="space-y-6">
+
+                <section class="white-panel rounded-2xl overflow-hidden">
+                    <div class="flex flex-col min-h-[560px]">
+                        <!-- 画像摘要行（默认收起） -->
+                        <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/50">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3 flex-wrap min-w-0">
+                                    <span class="text-sm font-mono text-slate-400 uppercase tracking-wider shrink-0">当前画像</span>
+                                    <span class="text-sm font-medium text-slate-700 truncate" id="profileSummary">平衡型 · ¥500,000 · 中长期 (3-5年)</span>
+                                    <span id="profileCatSummary" class="text-sm text-slate-400 hidden truncate"></span>
+                                </div>
+                                <button onclick="toggleProfileInline()" class="text-sm font-mono text-slate-500 hover:text-slate-900 border border-slate-200 rounded-lg px-2 py-1 transition-colors flex items-center gap-1 shrink-0 ml-2">
+                                    <span id="profileExpandIcon">▸</span> <span id="profileExpandLabel">展开画像</span>
+                                </button>
+                            </div>
+                            <!-- 可展开的完整画像表单 -->
+                            <div id="profileInlineForm" class="hidden mt-3 pt-3 border-t border-slate-200">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+                                    <div>
+                                        <label class="text-sm font-mono text-slate-400 uppercase tracking-wider block mb-1">姓名</label>
+                                        <input type="text" id="userName" value="用户" maxlength="20" onchange="updateProfileSummary()"
+                                               class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-slate-900 transition-colors">
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-mono text-slate-400 uppercase tracking-wider block mb-1">年龄</label>
+                                        <input type="number" id="userAge" value="30" min="18" max="80" onchange="updateProfileSummary()"
+                                               class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-slate-900 transition-colors">
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-mono text-slate-400 uppercase tracking-wider block mb-1">职业</label>
+                                        <input type="text" id="userOccupation" placeholder="如：工程师 / 教师 / 自由职业"
+                                               class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-slate-900 transition-colors">
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-mono text-slate-400 uppercase tracking-wider block mb-1">可投资金额 (元)</label>
+                                        <input type="number" id="userWealth" value="500000" min="10000" step="10000" onchange="updateProfileSummary()"
+                                               class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-slate-900 transition-colors">
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-mono text-slate-400 uppercase tracking-wider block mb-1">风险偏好</label>
+                                        <select id="userRisk" onchange="updateProfileSummary()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-slate-900 transition-colors">
+                                            <option value="保守型">保守型</option>
+                                            <option value="稳健型">稳健型</option>
+                                            <option value="平衡型" selected>平衡型</option>
+                                            <option value="成长型">成长型</option>
+                                            <option value="进取型">进取型</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-mono text-slate-400 uppercase tracking-wider block mb-1">投资期限</label>
+                                        <select id="userHorizon" onchange="updateProfileSummary()" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-slate-900 transition-colors">
+                                            <option value="短期 (1年以内)">短期 (1年以内)</option>
+                                            <option value="中短期 (1-3年)">中短期 (1-3年)</option>
+                                            <option value="中长期 (3-5年)" selected>中长期 (3-5年)</option>
+                                            <option value="长期 (5年以上)">长期 (5年以上)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="text-sm font-mono text-slate-400 uppercase tracking-wider block mb-2">投资品种偏好 <span class="text-slate-300 normal-case font-sans">(可多选，留空 = 全开，由 AI 从 50+ 标的中自由选)</span></label>
+                                    <div id="categoryChips" class="flex flex-wrap gap-2">
+                                        <span class="text-sm text-slate-400 italic">加载中...</span>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="text-sm font-mono text-slate-400 uppercase tracking-wider block mb-1">自选标的（可选，覆盖 AI 选品 · 仅支持 ticker 代码）</label>
+                                    <input type="text" id="userTickers" placeholder="ticker 代码，逗号分隔。例：600519.SS, 002594.SZ, AAPL, BTC-USD（留空 → AI 自动选）"
+                                           class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-slate-900 transition-colors font-mono">
+                                </div>
+                                <input type="text" id="userGoals" placeholder="理财目标 & 补充诉求（可选）"
+                                       class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-slate-900 transition-colors">
+                            </div>
+                        </div>
+                        <!-- 双栏：聊天 + 结果 -->
+                        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] flex-1 min-h-0">
+                            <div class="flex flex-col border-b lg:border-b-0 lg:border-r border-slate-100 min-h-0">
+                                <div class="h-14 px-5 border-b border-slate-100 flex items-center justify-between shrink-0">
+                                    <div>
+                                        <h2 class="text-sm font-display font-bold text-slate-900">Agent Chat</h2>
+                                        <p class="text-sm font-mono text-slate-400" id="chatSessionLabel">SESSION PENDING</p>
+                                    </div>
+                                    <span class="text-sm font-mono px-2 py-1 rounded bg-slate-100 text-slate-500">PERSISTENT</span>
+                                </div>
+                                <div id="chatMessages" class="flex-1 min-h-[280px] max-h-[440px] overflow-y-auto p-5 space-y-4 bg-slate-50/50">
+                                    <div class="max-w-[84%] rounded-xl rounded-tl-sm bg-white border border-slate-100 px-4 py-3 text-sm text-slate-700 shadow-sm">
+                                        我会记住同一个浏览器里的后续对话。调整上方画像后，下次对话自动生效。
+                                    </div>
+                                </div>
+                                <div class="p-4 border-t border-slate-100 bg-white shrink-0">
+                                    <div class="flex gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2 input-glow">
+                                        <input id="chatInput" type="text" class="flex-1 bg-transparent px-3 py-2 text-sm focus:outline-none text-slate-800 placeholder-slate-400"
+                                               placeholder="说说你的需求，或直接问..." onkeydown="if(event.key === 'Enter') sendChatMessage()">
+                                        <button id="chatSendBtn" onclick="sendChatMessage()"
+                                                class="bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all active:scale-[0.98]">
+                                            发送
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-5 bg-white">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-sm font-mono font-bold text-slate-500 uppercase tracking-wider">Latest Result</h3>
+                                    <span id="chatRiskBadge" class="text-sm font-mono px-2 py-1 rounded bg-slate-100 text-slate-400">WAITING</span>
+                                </div>
+                                <div id="chatResultPanel" class="space-y-3 text-sm text-slate-500">
+                                    <div class="rounded-xl border border-dashed border-slate-200 p-5 text-center text-sm text-slate-400">
+                                        暂无结果，发送一条消息试试
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                </div><!-- /tabPanel1 -->
+
+                <!-- Tab 2: 历史方案时间线 -->
+                <div id="tabPanel2" class="hidden space-y-6">
+
+                <section id="historySection" class="white-panel rounded-2xl p-6 lg:p-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-sm font-display font-bold text-slate-900 flex items-center gap-2">
+                                <span>🕐 历史方案时间线</span>
+                                <span class="text-sm font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-500" id="historyCount">0</span>
+                                <span id="pendingBadge" class="hidden text-sm font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-700">📬 0</span>
+                            </h2>
+                            <p class="text-sm font-mono text-slate-400 mt-0.5">点「归因复盘」回看某份方案 N 天后的真实表现</p>
+                        </div>
+                        <button onclick="loadHistory()" class="text-sm font-mono text-slate-500 hover:text-slate-900 border border-slate-200 rounded-lg px-3 py-1.5 transition-colors">
+                            ↻ 刷新
+                        </button>
+                    </div>
+                    <div id="historyList" class="space-y-2">
+                        <div class="rounded-xl border border-dashed border-slate-200 p-5 text-center text-sm text-slate-400">
+                            暂无历史方案，先生成一份策略试试
+                        </div>
+                    </div>
+                </section>
+
+                </div><!-- /tabPanel2 -->
+
+                <!-- Tab 3: 配置报告 -->
+                <div id="tabPanel3" class="hidden space-y-6">
+
+                <section id="profileSection" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up">
+                    <div class="md:col-span-1 bg-white rounded-[2rem] p-6 shadow-premium border border-slate-100 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center space-x-3 mb-4">
+                                <div class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold font-display text-sm" id="profAvatar">
+                                    --
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-display font-bold text-slate-900" id="profName">--</h3>
+                                    <p class="text-sm font-medium text-slate-500" id="profOcc">--</p>
+                                </div>
+                            </div>
+                            <div class="space-y-2 border-t border-slate-100 pt-3 text-slate-600 text-sm font-medium">
+                                <div class="flex justify-between"><span>年龄段：</span><span class="text-slate-900" id="profAge">--</span></div>
+                                <div class="flex justify-between"><span>投资期限：</span><span class="text-slate-900" id="profHorizon">--</span></div>
+                                <div class="flex justify-between"><span>核心理财目标：</span><span class="text-slate-900 md:max-w-[150px] truncate" id="profGoal">--</span></div>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                            <span class="text-sm font-bold text-slate-400 uppercase">风险偏好评估</span>
+                            <span class="px-2.5 py-1 bg-indigo-50 text-indigo-600 font-display font-bold text-sm rounded-lg" id="profRiskLevel">--</span>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 bg-white rounded-[2rem] p-6 shadow-premium border border-slate-100">
+                        <div class="flex justify-between items-center mb-2">
+                            <div>
+                                <p class="text-sm font-bold text-slate-400 uppercase tracking-wider">Asset Snapshot</p>
+                                <h3 class="text-base font-display font-bold text-slate-900">当前资产存量结构</h3>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-slate-400">净资产总额</p>
+                                <p class="text-lg font-display font-bold text-indigo-600" id="profTotalWealth">--</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3 mt-4" id="snapshotBarContainer">
+                            </div>
+                    </div>
+                </section>
+
+                <section id="resultSection" class="hidden space-y-6 animate-fade-in">
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+                        <div class="white-panel rounded-xl p-5">
+                            <div class="flex justify-between items-start">
+                                <div class="space-y-1">
+                                    <p class="text-sm font-mono text-slate-400 uppercase tracking-wider">STAGE 01 / ASSET SCREENING</p>
+                                    <h3 class="text-sm font-medium text-slate-500">底层资产池状态</h3>
+                                </div>
+                                <span class="p-1.5 rounded bg-slate-50 text-slate-600 border border-slate-100">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                </span>
+                            </div>
+                            <div class="text-xl font-display font-bold text-slate-900 mt-4" id="statusAssets">--</div>
+                        </div>
+
+                        <div class="white-panel rounded-xl p-5">
+                            <div class="flex justify-between items-start">
+                                <div class="space-y-1">
+                                    <p class="text-sm font-mono text-slate-400 uppercase tracking-wider">STAGE 02 / MATHEMATICAL SOLVER</p>
+                                    <h3 class="text-sm font-medium text-slate-500">沙箱规划精度</h3>
+                                </div>
+                                <span class="p-1.5 rounded bg-slate-50 text-slate-600 border border-slate-100">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                                </span>
+                            </div>
+                            <div class="text-xl font-display font-bold text-slate-900 mt-4 flex items-baseline space-x-1">
+                                <span>10</span><sup class="text-sm font-mono text-slate-600">-5</sup>
+                                <span class="text-sm font-normal text-slate-400 ml-1">级马科维茨精确求解</span>
+                            </div>
+                        </div>
+
+                        <div class="white-panel rounded-xl p-5">
+                            <div class="flex justify-between items-start">
+                                <div class="space-y-1">
+                                    <p class="text-sm font-mono text-slate-400 uppercase tracking-wider">STAGE 03 / COMPLIANCE AUDIT</p>
+                                    <h3 class="text-sm font-medium text-slate-500">风控与合规终审</h3>
+                                </div>
+                                <span class="p-1.5 rounded bg-slate-50 text-slate-400" id="riskIconBg">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                </span>
+                            </div>
+                            <div class="text-xl font-display font-bold mt-4" id="statusRisk">--</div>
+                        </div>
+                    </div>
+
+                    <!-- 双栏：策略微调逻辑 + 风控审计意见书 -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="white-panel rounded-2xl p-6 flex flex-col">
+                            <div class="flex items-center space-x-2 border-b border-slate-100 pb-3 mb-3">
+                                <span class="w-1.5 h-3 bg-slate-900 rounded-sm"></span>
+                                <h4 class="text-sm font-mono font-bold text-slate-800 uppercase tracking-wider">策略意图微调逻辑</h4>
+                            </div>
+                            <p id="timingReason" class="text-sm text-slate-600 leading-relaxed font-medium"></p>
+                        </div>
+
+                        <div class="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col font-mono">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400" id="riskLineColor"></span>
+                                    <h4 class="text-sm font-bold text-slate-700 uppercase tracking-wider">风控审计意见书</h4>
+                                </div>
+                                <span class="text-sm text-slate-400">SEC / Basel III</span>
+                            </div>
+                            <p id="riskReport" class="text-sm text-slate-500 leading-relaxed"></p>
+                        </div>
+                    </div>
+
+                    <!-- ===== 新增 ⓪ AI 选品理由 ===== -->
+                    <div id="selectionSection" class="hidden white-panel rounded-2xl p-5">
+                        <div class="flex items-center space-x-2 mb-2">
+                            <span class="w-1.5 h-3 bg-cyan-600 rounded-sm"></span>
+                            <h4 class="text-sm font-mono font-bold text-slate-800 uppercase tracking-wider">AI 选品理由 · Asset Selector</h4>
+                        </div>
+                        <p id="selectionRationale" class="text-sm text-slate-600 leading-relaxed"></p>
+                    </div>
+
+                    <!-- ===== 新增 ① 资产配置详情表（每个资产 base / final / 金额） ===== -->
+                    <div class="white-panel rounded-2xl p-6">
+                        <div class="flex items-center space-x-2 border-b border-slate-100 pb-3 mb-4">
+                            <span class="w-1.5 h-3 bg-indigo-600 rounded-sm"></span>
+                            <h4 class="text-sm font-mono font-bold text-slate-800 uppercase tracking-wider">最终配置详情 · Final Allocation</h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-sm uppercase font-mono text-slate-400 border-b border-slate-100">
+                                        <th class="text-left py-2 px-2">资产</th>
+                                        <th class="text-right py-2 px-2">MVO 基准</th>
+                                        <th class="text-right py-2 px-2" id="finalColHeader">最终权重</th>
+                                        <th class="text-right py-2 px-2">变化</th>
+                                        <th class="text-right py-2 px-2">建议金额</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="allocationTable" class="text-sm text-slate-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ===== 新增 ② 风险沙箱报告 (MC + VaR + 压力测试) ===== -->
+                    <div id="riskSimSection" class="hidden white-panel rounded-2xl p-6">
+                        <div class="flex items-center space-x-2 border-b border-slate-100 pb-3 mb-4">
+                            <span class="w-1.5 h-3 bg-blue-600 rounded-sm"></span>
+                            <h4 class="text-sm font-mono font-bold text-slate-800 uppercase tracking-wider">沙箱风险报告 · Monte Carlo + VaR + 压力测试</h4>
+                        </div>
+
+                        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+                            <div class="bg-slate-50 rounded-xl p-3">
+                                <p class="text-sm font-mono text-slate-400 uppercase">MC 亏损概率</p>
+                                <p id="rsProbLoss" class="text-lg font-display font-bold text-rose-600 mt-1">--</p>
+                            </div>
+                            <div class="bg-slate-50 rounded-xl p-3">
+                                <p class="text-sm font-mono text-slate-400 uppercase">预期收益</p>
+                                <p id="rsMeanReturn" class="text-lg font-display font-bold text-emerald-600 mt-1">--</p>
+                            </div>
+                            <div class="bg-slate-50 rounded-xl p-3">
+                                <p class="text-sm font-mono text-slate-400 uppercase">95% VaR</p>
+                                <p id="rsVaR" class="text-lg font-display font-bold text-amber-600 mt-1">--</p>
+                            </div>
+                            <div class="bg-slate-50 rounded-xl p-3">
+                                <p class="text-sm font-mono text-slate-400 uppercase">95% CVaR</p>
+                                <p id="rsCVaR" class="text-lg font-display font-bold text-rose-600 mt-1">--</p>
+                            </div>
+                            <div class="bg-slate-50 rounded-xl p-3">
+                                <p class="text-sm font-mono text-slate-400 uppercase">最差情景</p>
+                                <p id="rsWorst" class="text-sm font-display font-bold text-slate-900 mt-1">--</p>
+                            </div>
+                        </div>
+
+                        <p class="text-sm font-mono text-slate-400 uppercase mb-2">历史压力情景 PnL</p>
+                        <div id="stressTable" class="space-y-2"></div>
+                    </div>
+
+                    <!-- ===== 新增 ③ Critic 评判 + 反思闭环 ===== -->
+                    <div id="criticSection" class="hidden white-panel rounded-2xl p-6">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-1.5 h-3 bg-purple-600 rounded-sm"></span>
+                                <h4 class="text-sm font-mono font-bold text-slate-800 uppercase tracking-wider">Critic 评判 · Multi-Agent 反思闭环</h4>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <div class="text-right">
+                                    <p class="text-sm font-mono text-slate-400 uppercase">重试次数</p>
+                                    <p id="criticRetries" class="text-sm font-bold text-slate-900">0</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-mono text-slate-400 uppercase">评分</p>
+                                    <p id="criticScore" class="text-sm font-bold text-slate-900">--/100</p>
+                                </div>
+                                <span id="criticStatus" class="pill px-3 py-1 rounded-full text-sm font-bold">--</span>
+                            </div>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-100 rounded-xl p-4">
+                            <p class="text-sm font-mono text-purple-600 uppercase mb-2">📝 Critic 反馈</p>
+                            <p id="criticFeedback" class="text-sm text-slate-700 leading-relaxed"></p>
+                        </div>
+                    </div>
+
+                    <!-- ===== 新增 ④ 信息来源 (新闻) + LLM 成本 ===== -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div id="newsSection" class="hidden white-panel rounded-2xl p-6">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-1.5 h-3 bg-emerald-600 rounded-sm"></span>
+                                    <h4 class="text-sm font-mono font-bold text-slate-800 uppercase tracking-wider">信息来源 · 实时新闻摘要</h4>
+                                </div>
+                                <div id="newsSourceBadges" class="flex items-center space-x-1.5 text-sm font-mono"></div>
+                            </div>
+                            <div id="newsFreshnessLine" class="text-sm font-mono text-slate-400 mb-2"></div>
+                            <pre id="newsSummary" class="text-sm text-slate-600 font-mono whitespace-pre-wrap leading-relaxed max-h-[260px] overflow-y-auto"></pre>
+                        </div>
+
+                        <div id="costSection" class="hidden white-panel rounded-2xl p-6">
+                            <div class="flex items-center space-x-2 border-b border-slate-100 pb-3 mb-4">
+                                <span class="w-1.5 h-3 bg-amber-600 rounded-sm"></span>
+                                <h4 class="text-sm font-mono font-bold text-slate-800 uppercase tracking-wider">本次 LLM 成本 · Cost Breakdown</h4>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 mb-3">
+                                <div class="bg-slate-50 rounded-lg p-3 text-center">
+                                    <p class="text-sm font-mono text-slate-400 uppercase">总调用</p>
+                                    <p id="costCalls" class="text-base font-display font-bold text-slate-900 mt-1">0</p>
+                                </div>
+                                <div class="bg-slate-50 rounded-lg p-3 text-center">
+                                    <p class="text-sm font-mono text-slate-400 uppercase">Total Tokens</p>
+                                    <p id="costTokens" class="text-base font-display font-bold text-slate-900 mt-1">0</p>
+                                </div>
+                                <div class="bg-amber-50 rounded-lg p-3 text-center">
+                                    <p class="text-sm font-mono text-amber-600 uppercase">总费用</p>
+                                    <p id="costTotal" class="text-base font-display font-bold text-amber-700 mt-1">¥0.0000</p>
+                                </div>
+                            </div>
+                            <p class="text-sm font-mono text-slate-400 uppercase mb-2">按模型拆分</p>
+                            <div id="costByModel" class="space-y-1.5 text-sm font-mono text-slate-600"></div>
+                        </div>
+                    </div>
+                </section>
+
+                </div><!-- /tabPanel3 -->
+            </div>
+        </main>
+    </div>
+
+    <style>
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    </style>
+
+    <script>
+        let selectedCategories = new Set();
+        let userIdentity = null;
+
+        // ===== 标签切换 =====
+        let currentTab = 1;
+        let resultAvailable = false;
+
+        function switchTab(n) {
+            currentTab = n;
+            // 面板显示/隐藏
+            document.getElementById('tabPanel1').classList.toggle('hidden', n !== 1);
+            document.getElementById('tabPanel2').classList.toggle('hidden', n !== 2);
+            document.getElementById('tabPanel3').classList.toggle('hidden', n !== 3);
+            // 按钮样式
+            ['tabBtn1','tabBtn2','tabBtn3'].forEach((id, i) => {
+                const btn = document.getElementById(id);
+                if (i + 1 === n) {
+                    btn.className = 'text-sm font-mono font-bold px-5 py-2.5 rounded-lg bg-white text-slate-900 shadow-sm transition-all';
+                } else {
+                    btn.className = 'text-sm font-mono px-5 py-2.5 rounded-lg text-slate-500 hover:text-slate-700 transition-all';
+                }
+            });
+            // 切换到历史时自动刷新
+            if (n === 2) loadHistory();
+        }
+
+        function notifyResultAvailable() {
+            resultAvailable = true;
+            const badge = document.getElementById('tabResultBadge');
+            if (badge) badge.classList.remove('hidden');
+            // 自动切到报告页
+            switchTab(3);
+        }
+
+        function restoreLastResult() {
+            try {
+                const raw = localStorage.getItem('finagent_last_result');
+                if (!raw) return;
+                const data = JSON.parse(raw);
+                if (!data.assets || !data.assets.length) return;
+                // 恢复右侧 Chat 结果面板 + 报告数据到 Tab 3，但不跳转
+                renderChatResultPanel(data);
+                renderFullResult(data);
+                // 还原后留在 Tab 1
+                resultAvailable = true;
+                document.getElementById('tabResultBadge').classList.remove('hidden');
+                switchTab(1);
+            } catch (e) { /* 静默 */ }
+        }
+
+        function updateHistoryBadge(n) {
+            document.getElementById('tabHistoryBadge').innerText = n;
+            document.getElementById('historyCount').innerText = n;
+        }
+
+        // 🆕 API Key 脱敏：真实值保管在 realApiKey，输入框只显示首尾（sk-i****FbC8）
+        let realApiKey = '';
+        function maskSecret(k) {
+            if (!k) return '';
+            if (k.length <= 10) return k.slice(0, 2) + '****';
+            return k.slice(0, 4) + '****' + k.slice(-4);
+        }
+        function getApiKey() { return realApiKey || (document.getElementById('apiKey').value || ''); }
+        function setupApiKeyMask() {
+            const el = document.getElementById('apiKey');
+            if (!el) return;
+            el.addEventListener('focus', () => { if (realApiKey) el.value = realApiKey; });   // 聚焦看全
+            el.addEventListener('input', () => { realApiKey = el.value; });                    // 编辑同步
+            el.addEventListener('blur',  () => { realApiKey = el.value; el.value = maskSecret(realApiKey); }); // 失焦打码
+        }
+
+        // 🆕 6-3：从 config.yaml 预填 API / 模型 / Telegram，免每次刷新重输
+        async function loadDefaults() {
+            const setIf = (id, val) => {
+                const el = document.getElementById(id);
+                if (el && val && !el.value) el.value = val;
+            };
+            try {
+                const cfg = await (await fetch('/api/config')).json();
+                const l = cfg.llm || {}, t = cfg.telegram || {};
+                if (l.api_key && !realApiKey) {                 // API Key 走脱敏显示
+                    realApiKey = l.api_key;
+                    document.getElementById('apiKey').value = maskSecret(l.api_key);
+                }
+                setIf('baseUrl', l.base_url);
+                setIf('modelId', l.model);
+                setIf('routerModel', l.router_model);
+                setIf('chatModel', l.chat_model);
+                setIf('primaryModel', l.primary_model);
+                setIf('tgChatId', t.chat_id);
+                if (cfg.proxy) renderProxy(cfg.proxy);
+            } catch (e) { /* 静默：没有 config.yaml 就维持空白 */ }
+        }
+
+        // 🆕 系统代理开关：自动检测 + 显式开关（打开=自动连接）
+        let proxyEnabled = false;
+        function renderProxy(p) {
+            proxyEnabled = !!p.enabled;
+            const detected = document.getElementById('proxyDetected');
+            detected.innerText = p.detected ? ('检测到：' + p.detected) : '未检测到系统代理';
+            detected.className = 'text-sm font-mono truncate ' + (p.detected ? 'text-slate-500' : 'text-slate-300');
+            const toggle = document.getElementById('proxyToggle');
+            const knob = document.getElementById('proxyKnob');
+            toggle.setAttribute('aria-checked', proxyEnabled ? 'true' : 'false');
+            toggle.className = 'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ' + (proxyEnabled ? 'bg-emerald-500' : 'bg-slate-300');
+            knob.className = 'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ' + (proxyEnabled ? 'translate-x-[18px]' : 'translate-x-0.5');
+            const hint = document.getElementById('proxyHint');
+            if (proxyEnabled && p.active) hint.innerText = '✅ 已启用，走 ' + p.active + '（A 股行情仍直连）';
+            else if (proxyEnabled && !p.active) hint.innerText = '⚠️ 已打开但未检测到代理地址，等同直连';
+            else hint.innerText = '打开后 Telegram 推送与海外行情走系统代理；A 股行情始终直连。';
+        }
+
+        async function toggleProxy() {
+            const next = !proxyEnabled;
+            try {
+                const p = await (await fetch('/api/proxy', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ enabled: next, redetect: true })
+                })).json();
+                renderProxy(p);
+                loadTelegramStatus();   // 代理变化后重测 bot 连通性
+            } catch (e) { /* 静默 */ }
+        }
+
+        async function initIdentity() {
+            const storedUuid = localStorage.getItem('finagent_user_uuid');
+            const nameInput = document.getElementById('userName');
+            try {
+                const r = await fetch('/api/auth/init', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_uuid: storedUuid,
+                        name: nameInput ? nameInput.value : undefined
+                    })
+                });
+                const data = await r.json();
+                if (data.user_uuid) {
+                    localStorage.setItem('finagent_user_uuid', data.user_uuid);
+                    userIdentity = data;
+                    const label = document.getElementById('chatSessionLabel');
+                    if (label) label.innerText = data.session_id || `user-${data.user_uuid}`;
+                    loadHistory();
+                    loadPending();
+                    restoreLastResult();
+                }
+            } catch (e) {
+                console.warn('auth init failed', e);
+            }
+        }
+
+        // ===== 🆕 6-3：历史方案时间线 + 归因复盘 + 我已调仓 =====
+        const INTENT_LABEL = {
+            ASSET_ALLOCATION: '资产配置', PORTFOLIO_REVIEW: '持仓体检',
+            QA_RAG: '知识问答', CHIT_CHAT: '闲聊'
+        };
+
+        function currentUuid() {
+            return (userIdentity && userIdentity.user_uuid) || localStorage.getItem('finagent_user_uuid') || null;
+        }
+
+        let historyById = {};   // 缓存快照数据，供「查看配置」展开
+
+        async function loadHistory() {
+            const uuid = currentUuid();
+            if (!uuid) return;
+            const list = document.getElementById('historyList');
+            try {
+                const resp = await fetch(`/api/sessions/${uuid}/snapshots?limit=30`);
+                if (!resp.ok) return;
+                const snaps = (await resp.json()).snapshots || [];
+                historyById = {};
+                snaps.forEach(s => { historyById[s.id] = s; });
+                updateHistoryBadge(snaps.length);
+                list.innerHTML = snaps.length
+                    ? snaps.map(renderSnapshotRow).join('')
+                    : '<div class="rounded-xl border border-dashed border-slate-200 p-5 text-center text-sm text-slate-400">暂无历史方案，先生成一份策略试试</div>';
+            } catch (e) { /* 静默 */ }
+        }
+
+        function renderSnapshotRow(s) {
+            const intent = INTENT_LABEL[s.intent] || s.intent || '—';
+            const n = (s.tickers || []).length;
+            const top = (s.tickers || []).slice(0, 3).map(escapeHtml).join('、') + (n > 3 ? ` 等 ${n} 项` : '');
+            const followed = s.is_followed
+                ? '<span class="text-sm font-mono px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-200">已调仓</span>' : '';
+            return `
+            <div class="border border-slate-200 rounded-xl p-3">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-mono px-1.5 py-0.5 rounded bg-slate-900 text-white">#${s.id}</span>
+                        <span class="text-sm font-mono text-slate-500">${escapeHtml(s.advice_date || (s.created_at || '').slice(0,10))}</span>
+                        <span class="text-sm font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${escapeHtml(intent)}</span>
+                        ${followed}
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="toggleAllocation(${s.id})" class="text-sm font-mono text-slate-700 border border-slate-300 rounded px-2 py-1 hover:bg-slate-100 transition-colors">查看配置</button>
+                        <select id="hz-${s.id}" class="text-sm font-mono border border-slate-200 rounded px-1 py-0.5 text-slate-600 focus:outline-none">
+                            <option value="7">7天</option><option value="30">30天</option><option value="90">90天</option>
+                        </select>
+                        <button onclick="viewAttribution(${s.id})" class="text-sm font-mono text-indigo-600 border border-indigo-200 rounded px-2 py-1 hover:bg-indigo-50 transition-colors">归因复盘</button>
+                        <select id="bw-${s.id}" class="text-sm font-mono border border-slate-200 rounded px-1 py-0.5 text-slate-600 focus:outline-none">
+                            <option value="30">近30天</option><option value="60">近60天</option><option value="90">近90天</option><option value="180">近180天</option><option value="365">近1年</option>
+                        </select>
+                        <button onclick="viewBacktest(${s.id})" class="text-sm font-mono text-emerald-600 border border-emerald-200 rounded px-2 py-1 hover:bg-emerald-50 transition-colors">净值回测</button>
+                        <button onclick="pushReview(${s.id})" class="text-sm font-mono text-sky-600 border border-sky-200 rounded px-2 py-1 hover:bg-sky-50 transition-colors">🔔 推送</button>
+                        <button onclick="markFollowed(${s.id}, ${s.is_followed ? 'false' : 'true'})" class="text-sm font-mono text-slate-600 border border-slate-200 rounded px-2 py-1 hover:bg-slate-50 transition-colors">${s.is_followed ? '撤销' : '我已调仓'}</button>
+                    </div>
+                </div>
+                <div class="text-sm text-slate-500 mt-1.5">${top || '类别级持仓'}</div>
+                <div id="alloc-${s.id}" class="hidden mt-2"></div>
+                <div id="attr-${s.id}" class="hidden mt-2"></div>
+                <div id="bt-${s.id}" class="hidden mt-2"></div>
+                <div id="push-${s.id}" class="hidden mt-2"></div>
+            </div>`;
+        }
+
+        function toggleAllocation(sid) {
+            const box = document.getElementById('alloc-' + sid);
+            if (!box.classList.contains('hidden')) { box.classList.add('hidden'); return; }
+            box.classList.remove('hidden');
+            box.innerHTML = renderAllocation(historyById[sid]);
+        }
+
+        function renderAllocation(s) {
+            if (!s) return '';
+            const names = s.tickers || [];
+            let weights = (s.final_weights && s.final_weights.length === names.length)
+                ? s.final_weights
+                : (s.base_weights || []);
+            const note = (s.final_weights && s.final_weights.length) ? '最终权重' : '提案权重（未通过风控终审）';
+            if (!names.length || !weights.length) {
+                return '<div class="rounded-lg bg-slate-50 border border-slate-200 p-3 text-sm text-slate-500">该方案没有可展示的权重数据。</div>';
+            }
+            const wealth = s.total_wealth || 0;
+            const rows = names.map((n, i) => ({ n, w: weights[i] || 0 }))
+                .sort((a, b) => b.w - a.w)
+                .map(r => {
+                    const pct = (r.w * 100).toFixed(1);
+                    const amt = wealth ? '￥' + Math.round(r.w * wealth).toLocaleString() : '';
+                    return `
+                    <div class="flex items-center gap-2 text-sm">
+                        <div class="w-40 truncate text-slate-700">${escapeHtml(r.n)}</div>
+                        <div class="flex-1 bg-slate-100 rounded h-3 overflow-hidden">
+                            <div class="h-3 bg-slate-800 rounded" style="width:${Math.max(pct, 1)}%"></div>
+                        </div>
+                        <div class="w-12 text-right font-mono text-slate-800">${pct}%</div>
+                        <div class="w-24 text-right font-mono text-slate-400">${amt}</div>
+                    </div>`;
+                }).join('');
+            const sum = (weights.reduce((a, b) => a + (b || 0), 0) * 100).toFixed(1);
+            return `
+            <div class="rounded-lg bg-slate-50 border border-slate-200 p-3 space-y-1.5">
+                <div class="text-sm font-mono text-slate-400 mb-1">${note} · 共 ${names.length} 项 · 合计 ${sum}%${wealth ? ' · 本金 ￥' + wealth.toLocaleString() : ''}</div>
+                ${rows}
+            </div>`;
+        }
+
+        async function viewAttribution(sid) {
+            const box = document.getElementById('attr-' + sid);
+            const horizon = document.getElementById('hz-' + sid).value;
+            box.classList.remove('hidden');
+            box.innerHTML = '<div class="text-sm font-mono text-slate-400">归因计算中（回查真实行情）...</div>';
+            try {
+                const resp = await fetch(`/api/sessions/${currentUuid()}/attribution/${sid}?horizon=${horizon}`);
+                box.innerHTML = renderAttribution(await resp.json());
+            } catch (e) {
+                box.innerHTML = '<div class="text-sm font-mono text-rose-500">归因失败：' + escapeHtml(e.message) + '</div>';
+            }
+        }
+
+        function renderAttribution(a) {
+            const pct = v => ((v >= 0 ? '+' : '') + (v * 100).toFixed(2) + '%');
+            if (a.status === 'pending')
+                return `<div class="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-700">⏳ ${escapeHtml(a.reason || '等待数据积累')}<span class="text-amber-500"></span></div>`;
+            if (a.status !== 'ok')
+                return `<div class="rounded-lg bg-slate-50 border border-slate-200 p-3 text-sm text-slate-500">ℹ️ ${escapeHtml(a.reason || '暂无法计算')}</div>`;
+            const color = a.realized_return >= 0 ? 'text-emerald-600' : 'text-rose-600';
+            const contribs = Object.entries(a.asset_contributions || {})
+                .sort((x, y) => y[1] - x[1])
+                .map(([k, v]) => `<div class="flex justify-between"><span class="text-slate-600 truncate mr-2">${escapeHtml(k)}</span><span class="${v >= 0 ? 'text-emerald-600' : 'text-rose-600'} font-mono">${pct(v)}</span></div>`)
+                .join('');
+            return `
+            <div class="rounded-lg bg-slate-50 border border-slate-200 p-3 space-y-2">
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div><div class="text-sm text-slate-400 font-mono">真实收益</div><div class="text-sm font-bold ${color}">${pct(a.realized_return)}</div></div>
+                    <div><div class="text-sm text-slate-400 font-mono">年化波动</div><div class="text-sm font-bold text-slate-700">${pct(a.realized_volatility)}</div></div>
+                    <div><div class="text-sm text-slate-400 font-mono">Sharpe</div><div class="text-sm font-bold text-slate-700">${(a.realized_sharpe || 0).toFixed(2)}</div></div>
+                </div>
+                <div class="text-sm font-mono text-slate-400">区间 ${escapeHtml(a.advice_date)} → ${escapeHtml(a.as_of)}（${a.trading_days} 交易日）· 各资产贡献：</div>
+                <div class="text-sm space-y-0.5">${contribs}</div>
+            </div>`;
+        }
+
+        async function viewBacktest(sid) {
+            const box = document.getElementById('bt-' + sid);
+            const win = document.getElementById('bw-' + sid).value;
+            box.classList.remove('hidden');
+            box.innerHTML = '<div class="text-sm font-mono text-slate-400">回测计算中（拉取真实行情）...</div>';
+            try {
+                const resp = await fetch(`/api/sessions/${currentUuid()}/backtest/${sid}?window=${win}`);
+                box.innerHTML = renderBacktest(await resp.json());
+            } catch (e) {
+                box.innerHTML = '<div class="text-sm font-mono text-rose-500">回测失败：' + escapeHtml(e.message) + '</div>';
+            }
+        }
+
+        function navSparkline(nav) {
+            if (!nav || nav.length < 2) return '';
+            const vals = nav.map(p => p.value);
+            const min = Math.min(...vals), max = Math.max(...vals);
+            const span = (max - min) || 1;
+            const W = 240, H = 36;
+            const pts = vals.map((v, i) => {
+                const x = (i / (vals.length - 1)) * W;
+                const y = H - ((v - min) / span) * (H - 2) - 1;
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(' ');
+            const color = vals[vals.length - 1] >= vals[0] ? '#059669' : '#e11d48';
+            return `<svg viewBox="0 0 ${W} ${H}" class="w-full h-9" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5"/></svg>`;
+        }
+
+        function renderBacktest(b) {
+            const pct = v => ((v >= 0 ? '+' : '') + (v * 100).toFixed(2) + '%');
+            if (b.status !== 'ok')
+                return `<div class="rounded-lg bg-slate-50 border border-slate-200 p-3 text-sm text-slate-500">ℹ️ ${escapeHtml(b.reason || '暂无法回测')}</div>`;
+            const arColor = b.annualized_return >= 0 ? 'text-emerald-600' : 'text-rose-600';
+            const trColor = b.total_return >= 0 ? 'text-emerald-600' : 'text-rose-600';
+            const dropped = (b.dropped_assets || []).length
+                ? `<div class="text-sm font-mono text-amber-500">⚠️ 无行情已剔除：${b.dropped_assets.map(escapeHtml).join('、')}</div>` : '';
+            const simBadge = b.simulated
+                ? '<span class="text-sm font-mono px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">离线模拟 · 无参考意义</span>'
+                : '<span class="text-sm font-mono px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-200">真实行情</span>';
+            const footNote = b.simulated
+                ? '⚠️ 真实行情不可达，以上为对该窗口的离线模拟净值，纯演示形态，<b>不具备任何参考价值</b>'
+                : '⚠️ 模拟年化为短窗口收益线性外推，仅供参考，不代表未来表现';
+            const cardCls = b.simulated ? 'bg-amber-50/40 border-amber-200' : 'bg-slate-50 border-slate-200';
+            const bm = b.benchmark;
+            const benchmarkHtml = bm ? `
+                <div class="border-t border-slate-200 pt-2 mt-1">
+                    <div class="text-sm font-mono text-slate-400 mb-1">
+                        基准对比 · ${escapeHtml(bm.name)}
+                        <span class="text-slate-300">(${(bm.assets || []).map(a => a.name + ' ' + (a.weight * 100).toFixed(0) + '%').join(' / ')})</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div><div class="text-sm text-slate-400 font-mono">基准区间收益</div><div class="text-sm font-bold text-slate-700">${pct(bm.total_return)}</div></div>
+                        <div><div class="text-sm text-slate-400 font-mono">基准 Sharpe</div><div class="text-sm font-bold text-slate-700">${(bm.sharpe_ratio || 0).toFixed(2)}</div></div>
+                        <div><div class="text-sm text-slate-400 font-mono">超额收益</div><div class="text-sm font-bold ${(b.excess_return || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${pct(b.excess_return)}</div></div>
+                    </div>
+                </div>` : '';
+            return `
+            <div class="rounded-lg border p-3 space-y-2 ${cardCls}">
+                <div class="flex justify-end">${simBadge}</div>
+                <div class="grid grid-cols-4 gap-2 text-center">
+                    <div><div class="text-sm text-slate-400 font-mono">模拟年化</div><div class="text-sm font-bold ${arColor}">${pct(b.annualized_return)}</div></div>
+                    <div><div class="text-sm text-slate-400 font-mono">区间收益</div><div class="text-sm font-bold ${trColor}">${pct(b.total_return)}</div></div>
+                    <div><div class="text-sm text-slate-400 font-mono">最大回撤</div><div class="text-sm font-bold text-rose-600">${pct(b.max_drawdown)}</div></div>
+                    <div><div class="text-sm text-slate-400 font-mono">Sharpe</div><div class="text-sm font-bold text-slate-700">${(b.sharpe_ratio || 0).toFixed(2)}</div></div>
+                </div>
+                ${benchmarkHtml}
+                ${navSparkline(b.nav)}
+                <div class="text-sm font-mono text-slate-400">区间 ${escapeHtml(b.start_date)} → ${escapeHtml(b.end_date)}（${b.trading_days} 交易日 · 买入持有 · 年化波动 ${pct(b.annualized_volatility)}）</div>
+                <div class="text-sm font-mono text-slate-400">${footNote}</div>
+                ${dropped}
+            </div>`;
+        }
+
+        async function markFollowed(sid, followed) {
+            const uuid = currentUuid();
+            if (!uuid) return;
+            try {
+                await fetch(`/api/sessions/${uuid}/snapshots/${sid}/follow`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ is_followed: (followed === true || followed === 'true') })
+                });
+                loadHistory();
+            } catch (e) { /* 静默 */ }
+        }
+
+        // ===== 🆕 6-3：Telegram 主动推送 =====
+        async function loadTelegramStatus() {
+            const el = document.getElementById('tgStatus');
+            try {
+                const s = await (await fetch('/api/telegram/status')).json();
+                if (s.enabled && s.bot_ok) { el.innerText = '@' + (s.username || 'bot'); el.className = 'text-sm font-mono text-emerald-500'; }
+                else if (s.enabled) { el.innerText = '配置异常'; el.className = 'text-sm font-mono text-rose-400'; }
+                else { el.innerText = '未配置'; el.className = 'text-sm font-mono text-slate-300'; }
+            } catch (e) { el.innerText = '—'; }
+        }
+
+        async function bindTelegram() {
+            const uuid = currentUuid();
+            const chatId = (document.getElementById('tgChatId').value || '').trim();
+            const hint = document.getElementById('tgHint');
+            if (!uuid) { hint.innerText = '请先等身份初始化完成'; return; }
+            if (!chatId) { hint.innerText = '请先填写 chat id'; return; }
+            hint.innerText = '绑定中...';
+            try {
+                const r = await (await fetch(`/api/sessions/${uuid}/telegram`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ chat_id: chatId, send_test: true })
+                })).json();
+                const t = r.test;
+                hint.innerText = (t && t.ok) ? '✅ 已绑定，测试消息已发送，请查收 Telegram'
+                    : ('⚠️ 已绑定，但测试消息失败：' + ((t && (t.error || (t.skipped ? '通道未启用' : ''))) || '未知'));
+                hint.className = (t && t.ok) ? 'text-sm font-mono text-emerald-500 leading-relaxed' : 'text-sm font-mono text-amber-500 leading-relaxed';
+            } catch (e) {
+                hint.innerText = '绑定失败：' + e.message;
+            }
+        }
+
+        async function pushReview(sid) {
+            const uuid = currentUuid();
+            const box = document.getElementById('push-' + sid);
+            box.classList.remove('hidden');
+            box.innerHTML = '<div class="text-sm font-mono text-slate-400">生成复盘并推送 Telegram...</div>';
+            try {
+                const r = await (await fetch(`/api/sessions/${uuid}/snapshots/${sid}/notify`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ horizon: parseInt(document.getElementById('hz-' + sid).value) || 7 })
+                })).json();
+                const okBadge = r.ok
+                    ? '<span class="text-emerald-600">✅ 已推送到 Telegram</span>'
+                    : '<span class="text-amber-600">⚠️ 未推送：' + escapeHtml((r.notify && (r.notify.error || (r.notify.skipped ? '未绑定 chat id / bot 未配置' : ''))) || '未知') + '</span>';
+                box.innerHTML = `
+                <div class="rounded-lg bg-sky-50 border border-sky-200 p-3 text-sm space-y-1">
+                    <div class="font-mono text-sm text-sky-700">${escapeHtml(r.reason || '复盘')} · 归因 ${escapeHtml(r.attribution_status || '')} · ${okBadge}</div>
+                    <pre class="whitespace-pre-wrap text-slate-700 text-sm leading-relaxed">${escapeHtml(r.text || '')}</pre>
+                </div>`;
+                loadPending();
+            } catch (e) {
+                box.innerHTML = '<div class="text-sm font-mono text-rose-500">推送失败：' + escapeHtml(e.message) + '</div>';
+            }
+        }
+
+        async function loadPending() {
+            const uuid = currentUuid();
+            if (!uuid) return;
+            try {
+                const r = await (await fetch(`/api/sessions/${uuid}/pending`)).json();
+                const n = (r.pending || []).length;
+                const badge = document.getElementById('pendingBadge');
+                if (badge) {
+                    badge.innerText = '📬 ' + n;
+                    badge.classList.toggle('hidden', n === 0);
+                }
+            } catch (e) { /* 静默 */ }
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function toggleAdvancedLLM() {
+            const box = document.getElementById('advLLM');
+            const caret = document.getElementById('advCaret');
+            const open = box.classList.toggle('hidden') === false;
+            caret.innerText = open ? '▾' : '▸';
+        }
+
+        // 收集自定义 LLM 接入参数，只带上非空字段（留空 → 后端回退 config 默认）
+        function getLLMOverrides() {
+            const pick = (id) => {
+                const v = (document.getElementById(id).value || '').trim();
+                return v.length ? v : undefined;
+            };
+            const out = {};
+            const map = {
+                base_url: 'baseUrl', model: 'modelId',
+                router_model: 'routerModel', chat_model: 'chatModel', primary_model: 'primaryModel',
+            };
+            for (const [key, id] of Object.entries(map)) {
+                const v = pick(id);
+                if (v !== undefined) out[key] = v;
+            }
+            return out;
+        }
+
+        function getProfilePayload(message) {
+            const tickersRaw = (document.getElementById('userTickers').value || '').trim();
+            const customTickers = tickersRaw
+                ? tickersRaw.split(',').map(t => t.trim()).filter(t => t.length > 0)
+                : null;
+            return {
+                api_key: getApiKey(),
+                message: message,
+                user_uuid: userIdentity ? userIdentity.user_uuid : localStorage.getItem('finagent_user_uuid'),
+                session_id: userIdentity ? userIdentity.session_id : null,
+                name: document.getElementById('userName').value || '用户',
+                age: parseInt(document.getElementById('userAge').value) || 30,
+                occupation: document.getElementById('userOccupation').value || '未填写',
+                total_wealth: parseInt(document.getElementById('userWealth').value) || 500000,
+                risk_tolerance_level: document.getElementById('userRisk').value,
+                investment_horizon: document.getElementById('userHorizon').value,
+                financial_goals: document.getElementById('userGoals').value || message,
+                custom_tickers: customTickers,
+                preferred_categories: Array.from(selectedCategories),
+                ...getLLMOverrides()
+            };
+        }
+
+        function appendChatMessage(role, content, result) {
+            const box = document.getElementById('chatMessages');
+            const wrap = document.createElement('div');
+            wrap.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+            const bubble = document.createElement('div');
+            bubble.className = role === 'user'
+                ? 'max-w-[84%] rounded-xl rounded-tr-sm bg-slate-900 px-4 py-3 text-sm text-white shadow-sm whitespace-pre-wrap'
+                : 'max-w-[88%] rounded-xl rounded-tl-sm bg-white border border-slate-100 px-4 py-3 text-sm text-slate-700 shadow-sm whitespace-pre-wrap';
+            bubble.innerText = content || '';
+            wrap.appendChild(bubble);
+            box.appendChild(wrap);
+            if (result) {
+                const cardWrap = document.createElement('div');
+                cardWrap.className = 'flex justify-start';
+                cardWrap.innerHTML = renderChatResultCard(result);
+                box.appendChild(cardWrap);
+            }
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function renderChatResultCard(data) {
+            const assets = data.assets || [];
+            const weights = (data.final_weights && data.final_weights.length) ? data.final_weights : (data.adjusted_weights || []);
+            const rows = assets.slice(0, 6).map((asset, i) => {
+                const w = weights[i] || 0;
+                return `
+                    <div class="flex items-center justify-between gap-3 text-sm">
+                        <span class="truncate text-slate-600">${escapeHtml(asset)}</span>
+                        <span class="font-mono font-bold text-slate-900">${(w * 100).toFixed(1)}%</span>
+                    </div>`;
+            }).join('');
+            if (!rows) return '';
+            return `
+                <div class="w-full max-w-[88%] rounded-xl bg-white border border-slate-200 shadow-sm p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-mono uppercase tracking-wider text-slate-400">Allocation</span>
+                        <span class="text-sm font-mono px-2 py-0.5 rounded ${data.risk_status === 'PASS' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${escapeHtml(data.risk_status || 'DONE')}</span>
+                    </div>
+                    <div class="space-y-2">${rows}</div>
+                    <p class="text-sm text-slate-500 leading-relaxed">${escapeHtml(data.timing_reason || '').slice(0, 220)}</p>
+                </div>`;
+        }
+
+        function renderChatResultPanel(data) {
+            const panel = document.getElementById('chatResultPanel');
+            const badge = document.getElementById('chatRiskBadge');
+            const assets = data.assets || [];
+            const weights = (data.final_weights && data.final_weights.length) ? data.final_weights : (data.adjusted_weights || []);
+            badge.innerText = data.risk_status || 'DONE';
+            badge.className = 'text-sm font-mono px-2 py-1 rounded ' +
+                (data.risk_status === 'PASS' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700');
+            if (!assets.length || !weights.length) {
+                panel.innerHTML = `<div class="rounded-xl border border-slate-100 p-4 text-sm text-slate-500">${escapeHtml(data.assistant_message || data.timing_reason || '已回复')}</div>`;
+                return;
+            }
+            const total = ((data.asset_snapshot || {}).total_wealth) || parseInt(document.getElementById('userWealth').value) || 500000;
+            const rows = assets.map((asset, i) => {
+                const w = weights[i] || 0;
+                return `
+                    <tr class="border-b border-slate-50">
+                        <td class="py-2 pr-2 text-slate-700">${escapeHtml(asset)}</td>
+                        <td class="py-2 px-2 text-right font-mono text-slate-900">${(w * 100).toFixed(2)}%</td>
+                        <td class="py-2 pl-2 text-right font-mono text-slate-500">¥${Math.round(w * total).toLocaleString()}</td>
+                    </tr>`;
+            }).join('');
+            panel.innerHTML = `
+                <div class="rounded-xl border border-slate-100 overflow-hidden">
+                    <table class="w-full text-sm">
+                        <thead><tr><th>资产</th><th class="text-right">权重</th><th class="text-right">金额</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+                <div class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600 leading-relaxed">${escapeHtml(data.risk_report || data.timing_reason || '')}</div>`;
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const btn = document.getElementById('chatSendBtn');
+            const message = (input.value || '').trim();
+            if (!message) return;
+            if (!getApiKey()) {
+                alert('请先填写 API Key');
+                return;
+            }
+            if (!userIdentity) await initIdentity();
+            appendChatMessage('user', message);
+            input.value = '';
+            const oldText = btn.innerText;
+            btn.innerText = '处理中';
+            btn.disabled = true;
+            btn.classList.add('opacity-60', 'cursor-not-allowed');
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(getProfilePayload(message))
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'chat failed');
+                userIdentity = {
+                    user_uuid: data.user_uuid,
+                    session_id: data.session_id,
+                    user_id: data.user_id
+                };
+                localStorage.setItem('finagent_user_uuid', data.user_uuid);
+                document.getElementById('chatSessionLabel').innerText = data.session_id;
+                appendChatMessage('assistant', data.assistant_message || data.timing_reason || '已完成。', data);
+                renderChatResultPanel(data);
+                // 如果是配置类结果，同步渲染完整报告并持久化
+                if (data.assets && data.assets.length) {
+                    renderFullResult(data);
+                    notifyResultAvailable();
+                    localStorage.setItem('finagent_last_result', JSON.stringify(data));
+                    localStorage.setItem('finagent_last_result_ts', Date.now());
+                }
+                loadHistory();
+            } catch (e) {
+                appendChatMessage('assistant', '系统暂时无法完成这次对话：' + e.message);
+            } finally {
+                btn.innerText = oldText;
+                btn.disabled = false;
+                btn.classList.remove('opacity-60', 'cursor-not-allowed');
+            }
+        }
+
+        // 时钟小组件
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = `SYS_TIME: ${now.toISOString().replace('T', ' ').substring(0, 19)}`;
+        }, 1000);
+
+        // 加载类别 chips
+        async function loadCategories() {
+            try {
+                const r = await fetch('/api/categories');
+                const data = await r.json();
+                const container = document.getElementById('categoryChips');
+                container.innerHTML = '';
+                data.categories.forEach(c => {
+                    const chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.dataset.key = c.key;
+                    chip.className = 'category-chip text-sm px-3 py-1.5 rounded-full border transition-all';
+                    chip.innerHTML = `${c.label} <span class="text-sm opacity-50">(${c.count})</span>`;
+                    chip.style.borderColor = '#CBD5E1';
+                    chip.style.background = '#F8FAFC';
+                    chip.style.color = '#475569';
+                    chip.onclick = () => {
+                        if (selectedCategories.has(c.key)) {
+                            selectedCategories.delete(c.key);
+                            chip.style.background = '#F8FAFC';
+                            chip.style.color = '#475569';
+                            chip.style.borderColor = '#CBD5E1';
+                        } else {
+                            selectedCategories.add(c.key);
+                            chip.style.background = '#0F172A';
+                            chip.style.color = '#FFFFFF';
+                            chip.style.borderColor = '#0F172A';
+                        }
+                        updateProfileSummary();
+                    };
+                    container.appendChild(chip);
+                });
+                const hint = document.createElement('span');
+                hint.className = 'text-sm text-slate-400 ml-2 self-center';
+                hint.innerText = `共 ${data.total_assets} 个标的可挑`;
+                container.appendChild(hint);
+            } catch (e) {
+                document.getElementById('categoryChips').innerHTML =
+                    '<span class="text-sm text-rose-400">类别加载失败：' + e.message + '</span>';
+            }
+        }
+        setupApiKeyMask();
+        loadDefaults();
+        initIdentity();
+        loadCategories();
+        loadTelegramStatus();
+
+        // ===== 画像折叠展开 =====
+        function toggleProfileInline() {
+            const form = document.getElementById('profileInlineForm');
+            const icon = document.getElementById('profileExpandIcon');
+            const label = document.getElementById('profileExpandLabel');
+            const open = form.classList.toggle('hidden') === false;
+            icon.innerText = open ? '▾' : '▸';
+            label.innerText = open ? '收起画像' : '展开画像';
+        }
+
+        function updateProfileSummary() {
+            const risk = document.getElementById('userRisk').value;
+            const wealth = parseInt(document.getElementById('userWealth').value) || 500000;
+            const wealthStr = wealth >= 10000 ? '¥' + (wealth / 10000).toFixed(0) + '万' : '¥' + wealth;
+            const horizon = document.getElementById('userHorizon').value;
+            const age = document.getElementById('userAge').value;
+            const summary = document.getElementById('profileSummary');
+            summary.innerText = `${risk} · ${wealthStr} · ${horizon} · ${age}岁`;
+            // 更新类别摘要
+            const catSummary = document.getElementById('profileCatSummary');
+            if (selectedCategories.size > 0) {
+                catSummary.classList.remove('hidden');
+                catSummary.innerText = '类别: ' + Array.from(selectedCategories).slice(0,3).join(' · ') + (selectedCategories.size > 3 ? ' +' + (selectedCategories.size-3) : '');
+            } else {
+                catSummary.classList.add('hidden');
+            }
+        }
+
+        // ===== 渲染完整策略结果（供 sendChatMessage 复用 runWorkflow 的渲染逻辑） =====
+        function renderFullResult(data) {
+            const totalWealth = parseInt(document.getElementById('userWealth').value) || 500000;
+
+            document.getElementById('resultSection').classList.add('animate-fade-in');
+            document.getElementById('profileSection').classList.remove('hidden');
+            document.getElementById('resultSection').classList.remove('hidden');
+
+            // 画像快照面板 — 如果后端未返回 user_profile / asset_snapshot 则略过
+            const profSection = document.getElementById('profileSection');
+            if (data.user_profile && data.asset_snapshot) {
+                profSection.classList.remove('hidden');
+                document.getElementById('profName').innerText = data.user_profile.name;
+                document.getElementById('profAvatar').innerText = data.user_profile.name.charAt(0);
+                document.getElementById('profOcc').innerText = data.user_profile.occupation;
+                document.getElementById('profAge').innerText = data.user_profile.age + ' 岁';
+                document.getElementById('profHorizon').innerText = data.user_profile.investment_horizon;
+                document.getElementById('profGoal').innerText = data.user_profile.financial_goals;
+                document.getElementById('profRiskLevel').innerText = `${data.user_profile.risk_tolerance_level} (${data.user_profile.risk_score || 50}分)`;
+                document.getElementById('profTotalWealth').innerText = '¥' + data.asset_snapshot.total_wealth.toLocaleString();
+                const currentAlloc = data.asset_snapshot.current_allocation || {};
+                const total = data.asset_snapshot.total_wealth;
+                const labelMap = {
+                    'Cash_Equivalents': { name: '现金及高流动性资产', color: 'bg-emerald-500' },
+                    'Fixed_Income': { name: '固定收益与纯债自选', color: 'bg-blue-500' },
+                    'Equities': { name: '权益类/股票型高波资产', color: 'bg-indigo-500' },
+                    'Alternative_Assets': { name: '商品/黄金另类避险资产', color: 'bg-amber-500' }
+                };
+                let barHtml = '';
+                for (let key in currentAlloc) {
+                    const val = currentAlloc[key];
+                    const pct = ((val / total) * 100).toFixed(1);
+                    barHtml += `<div><div class="flex justify-between text-sm font-medium text-slate-500 mb-1"><span>${labelMap[key].name}</span><span class="text-slate-700 font-bold">¥${val.toLocaleString()} (${pct}%)</span></div><div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden"><div class="${labelMap[key].color} h-full transition-all duration-500" style="width: ${pct}%"></div></div></div>`;
+                }
+                document.getElementById('snapshotBarContainer').innerHTML = barHtml;
+            } else {
+                profSection.classList.add('hidden');
+            }
+
+            document.getElementById('statusAssets').innerText = `${(data.assets || []).length} TYPE CLASSES`;
+            document.getElementById('timingReason').innerText = data.timing_reason || '';
+            document.getElementById('riskReport').innerText = `[LOG] 开始解析合规核心条目...\n${data.risk_report || ''}`;
+
+            const riskEl = document.getElementById('statusRisk');
+            const riskIconBg = document.getElementById('riskIconBg');
+            const riskLineColor = document.getElementById('riskLineColor');
+            if (data.risk_status === 'PASS') {
+                riskEl.innerText = 'PASSED';
+                riskEl.className = 'text-xl font-display font-bold text-emerald-600 tracking-wide';
+                riskIconBg.className = 'p-1.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100';
+                riskLineColor.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+            } else {
+                riskEl.innerText = 'REJECTED';
+                riskEl.className = 'text-xl font-display font-bold text-rose-600 tracking-wide';
+                riskIconBg.className = 'p-1.5 rounded bg-rose-50 text-rose-600 border border-rose-100';
+                riskLineColor.className = 'w-1.5 h-1.5 rounded-full bg-rose-500';
+            }
+
+            // 选品理由
+            const selSec = document.getElementById('selectionSection');
+            if (data.selection_rationale && data.selection_rationale.length > 5) {
+                selSec.classList.remove('hidden');
+                document.getElementById('selectionRationale').innerText = data.selection_rationale;
+            } else { selSec.classList.add('hidden'); }
+
+            // 配置详情表
+            const allocTbody = document.getElementById('allocationTable');
+            allocTbody.innerHTML = '';
+            const assets = data.assets || [];
+            const base = data.base_weights || [];
+            const finalW = data.final_weights || [];
+            const adjusted = data.adjusted_weights || [];
+            const isRejected = data.risk_status !== 'PASS' && data.risk_status !== 'CHAT';
+            const display = (finalW.length > 0) ? finalW : adjusted;
+            const wealth = (data.asset_snapshot && data.asset_snapshot.total_wealth) || totalWealth || 500000;
+            document.getElementById('finalColHeader').innerText = isRejected ? '提案权重 (未执行)' : '最终权重';
+            if (isRejected && display.length > 0) {
+                allocTbody.innerHTML += `<tr class="bg-amber-50 border-b border-amber-200"><td colspan="5" class="px-3 py-3 text-sm text-amber-800 leading-relaxed">⚠️ <b>以下为 AI 提案配置（已完成 MVO + T_t 微调 + Critic 评判），但风控终审未通过</b>，金额栏仅为参考估算。</td></tr>`;
+            }
+            for (let i = 0; i < assets.length; i++) {
+                const b = base[i] || 0;
+                const f = display[i] !== undefined ? display[i] : b;
+                const delta = f - b;
+                const amount = f * wealth;
+                const deltaColor = delta > 0.001 ? 'text-emerald-600' : (delta < -0.001 ? 'text-rose-600' : 'text-slate-400');
+                const deltaSign = delta > 0.001 ? '+' : '';
+                const fc = isRejected ? 'text-right py-2.5 px-2 font-mono font-bold text-rose-600 line-through opacity-70' : 'text-right py-2.5 px-2 font-mono font-bold text-slate-900';
+                const ac = isRejected ? 'text-right py-2.5 px-2 font-mono text-rose-500 opacity-70' : 'text-right py-2.5 px-2 font-mono text-slate-700';
+                allocTbody.innerHTML += `<tr class="border-b border-slate-50 hover:bg-slate-50/40"><td class="py-2.5 px-2 font-medium text-slate-800">${assets[i]}</td><td class="text-right py-2.5 px-2 font-mono text-slate-500">${(b*100).toFixed(2)}%</td><td class="${fc}">${(f*100).toFixed(2)}%</td><td class="text-right py-2.5 px-2 font-mono ${deltaColor}">${deltaSign}${(delta*100).toFixed(2)}%</td><td class="${ac}">¥${Math.round(amount).toLocaleString()}</td></tr>`;
+            }
+            if (display.length === 0) allocTbody.innerHTML = '<tr><td colspan="5" class="py-4 px-2 text-center text-slate-400 text-sm">未生成任何配置（可能 LLM 故障 + 行情拉取失败）</td></tr>';
+
+            // 风险沙箱
+            const riskSimS = document.getElementById('riskSimSection');
+            const sim = data.risk_simulation || {};
+            if (sim.monte_carlo) {
+                riskSimS.classList.remove('hidden');
+                const mc = sim.monte_carlo.summary || {}, v = sim.var_cvar || {}, st = sim.stress_test || {};
+                const pct = x => (x === undefined || x === null) ? '--' : (x * 100).toFixed(1) + '%';
+                document.getElementById('rsProbLoss').innerText = pct(mc.prob_loss);
+                document.getElementById('rsMeanReturn').innerText = pct(mc.mean_return);
+                document.getElementById('rsVaR').innerText = pct(v.var_return);
+                document.getElementById('rsCVaR').innerText = pct(v.cvar_return);
+                document.getElementById('rsWorst').innerText = (st.worst_scenario || '--').replace(/_/g, ' ');
+                const scenarioMap = { '2008_financial_crisis': '2008 金融危机', '2020_covid_crash': '2020 疫情冲击', '2022_rate_hike': '2022 加息周期', 'china_2015_bubble_burst': '2015 A股股灾' };
+                let stressHtml = '';
+                for (const key in (st.scenarios || {})) {
+                    const sc = st.scenarios[key];
+                    const bar = Math.min(Math.abs(sc.portfolio_return || 0) * 200, 100);
+                    stressHtml += `<div class="flex items-center text-sm"><span class="w-32 shrink-0 text-slate-600 truncate">${scenarioMap[key] || key}</span><div class="flex-1 mx-3 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="${(sc.portfolio_return||0)<0?'bg-rose-500':'bg-emerald-500'} h-full" style="width:${bar}%"></div></div><span class="w-20 text-right font-mono ${(sc.portfolio_return||0)<0?'text-rose-600':'text-emerald-600'}">${((sc.portfolio_return||0)*100).toFixed(1)}%</span><span class="w-28 text-right font-mono text-slate-500">¥${Math.round(sc.portfolio_pnl||0).toLocaleString()}</span></div>`;
+                }
+                document.getElementById('stressTable').innerHTML = stressHtml || '<p class="text-sm text-slate-400">无压力测试数据</p>';
+            } else { riskSimS.classList.add('hidden'); }
+
+            // Critic
+            const critS = document.getElementById('criticSection');
+            if (data.critic_status) {
+                critS.classList.remove('hidden');
+                document.getElementById('criticScore').innerText = `${data.critic_score||0}/100`;
+                document.getElementById('criticRetries').innerText = data.critic_retries||0;
+                document.getElementById('criticFeedback').innerText = data.critic_feedback||'';
+                const cs = document.getElementById('criticStatus');
+                cs.innerText = data.critic_status;
+                cs.className = 'pill px-3 py-1 rounded-full text-sm font-bold ' + (data.critic_status==='APPROVE'?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-700');
+            } else { critS.classList.add('hidden'); }
+
+            // 新闻
+            const newsS = document.getElementById('newsSection');
+            if (data.news_summary && data.news_summary.length > 5) {
+                newsS.classList.remove('hidden');
+                document.getElementById('newsSummary').innerText = data.news_summary;
+                const meta = data.news_meta || {};
+                const badges = document.getElementById('newsSourceBadges');
+                badges.innerHTML = '';
+                for (const src in (meta.by_source || {})) {
+                    const b = document.createElement('span');
+                    b.className = 'px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700';
+                    b.innerText = `${src} ×${meta.by_source[src]}`;
+                    badges.appendChild(b);
+                }
+                const fl = document.getElementById('newsFreshnessLine');
+                if (meta.total > 0) fl.innerHTML = `📅 共 ${meta.total} 条 · 最新 ${meta.newest_date} · 最早 ${meta.oldest_date} · 本周内 <b>${meta.in_last_week}/${meta.total}</b> (${((meta.in_last_week/meta.total)*100).toFixed(0)}%)`;
+            } else { newsS.classList.add('hidden'); }
+
+            // LLM 成本
+            const costS = document.getElementById('costSection');
+            const usage = data.llm_usage || {};
+            if (usage.total_calls > 0) {
+                costS.classList.remove('hidden');
+                document.getElementById('costCalls').innerText = usage.total_calls;
+                document.getElementById('costTokens').innerText = ((usage.total_prompt_tokens||0)+(usage.total_completion_tokens||0)).toLocaleString();
+                document.getElementById('costTotal').innerText = '¥' + (usage.total_cost_rmb||0).toFixed(4);
+                let mh = '';
+                for (const m in (usage.by_model||{})) {
+                    const s = usage.by_model[m];
+                    mh += `<div class="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded"><span class="text-slate-700">${m}</span><span class="text-slate-500">${s.calls} 次 · ${s.tokens.toLocaleString()} tk · <span class="text-amber-700 font-bold">¥${s.cost_rmb.toFixed(4)}</span></span></div>`;
+                }
+                document.getElementById('costByModel').innerHTML = mh;
+            } else { costS.classList.add('hidden'); }
+        }
+    </script>
+</body>
+</html>

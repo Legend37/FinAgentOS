@@ -1,0 +1,14 @@
+# config.example.yaml —— 复制为 config.yaml 并填入你自己的密钥。
+# 程序启动会读取同目录的 config.yaml；config.yaml 已被 .gitignore 忽略。
+
+llm:
+  api_key: ""                          # DeepSeek / OpenAI 兼容服务的 API Key
+  base_url: ""                         # 留空 = DeepSeek 官方 https://api.deepseek.com
+  model: ""                            # 单模型 ID，覆盖全部三档；留空按角色默认
+  router_model: ""                     # 高级：分档覆盖（留空 = 用 model 或 config 默认）
+  chat_model: ""
+  primary_model: ""
+
+telegram:
+  bot_token: ""                        # @BotFather 申请的 bot token；留空则推送静默跳过
+  chat_id: ""                          # 默认推送目标 chat_id
