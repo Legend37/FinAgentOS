@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinAgent OS · 持久 Agent 路线图</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+        body {
+            font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            background: radial-gradient(100% 100% at 50% 0%, #FFFFFF 0%, #F1F5F9 100%);
+            color: #0F172A;
+        }
+        .font-display { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .panel { background:#FFFFFF; border:1px solid rgba(15,23,42,0.06);
+            box-shadow:0 1px 3px 0 rgba(0,0,0,0.01), 0 10px 30px -10px rgba(15,23,42,0.04);
+            border-radius:14px; }
+        .pill { display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px;
+            font-size:11px; font-weight:600; }
+        .pill-todo { background:#FEF3C7; color:#92400E; }
+        .pill-have { background:#DCFCE7; color:#166534; }
+        .pill-need { background:#FEE2E2; color:#991B1B; }
+        .pill-info { background:#DBEAFE; color:#1E40AF; }
+        .pill-blocked { background:#F1F5F9; color:#475569; }
+        .stat { background:#0F172A; color:#FFFFFF; border-radius:12px; }
+        .code-block { background:#0F172A; color:#E2E8F0; padding:14px 18px;
+            border-radius:10px; font-family:'JetBrains Mono',monospace;
+            font-size:12.5px; line-height:1.65; overflow-x:auto; }
+        .code-block .kw { color:#C4B5FD; }
+        .code-block .str { color:#86EFAC; }
+        .code-block .num { color:#FCD34D; }
+        .code-block .com { color:#64748B; font-style:italic; }
+        .code-block .fn { color:#93C5FD; }
+        .code-block .var { color:#FCA5A5; }
+        table { border-collapse:collapse; width:100%; }
+        th, td { text-align:left; padding:9px 12px; border-bottom:1px solid #E2E8F0;
+            font-size:13px; vertical-align:top; }
+        th { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
+            color:#64748B; background:#F8FAFC; }
+        td code { background:#F1F5F9; padding:1px 6px; border-radius:4px; font-size:12px; }
+        .pain-card { background:#FEF2F2; border-left:4px solid #DC2626; padding:14px 18px;
+            border-radius:8px; margin-bottom:10px; }
+        .pain-card h4 { color:#991B1B; font-weight:700; margin-bottom:4px; }
+        .pain-card p { color:#7F1D1D; font-size:13px; line-height:1.6; }
+        .impl-step { border-left:3px solid #0F172A; padding-left:14px; margin-bottom:14px; }
+        .impl-step h4 { font-family:'Plus Jakarta Sans',sans-serif; font-weight:700;
+            font-size:14px; margin-bottom:4px; }
+        .impl-step.todo { border-left-color:#D97706; }
+        .impl-step.todo h4 { color:#92400E; }
+        .impl-step.have { border-left-color:#059669; }
+        .impl-step.have h4 { color:#065F46; }
+        .timeline {
+            position:relative; padding-left:28px;
+        }
+        .timeline::before {
+            content:''; position:absolute; left:7px; top:0; bottom:0;
+            width:2px; background:linear-gradient(180deg, #0F172A, #94A3B8);
+        }
+        .timeline-item {
+            position:relative; padding-bottom:18px;
+        }
+        .timeline-item::before {
+            content:''; position:absolute; left:-25px; top:4px;
+            width:14px; height:14px; border-radius:50%; background:#FFF;
+            border:3px solid #0F172A;
+        }
+        .timeline-item.user::before { border-color:#0891B2; }
+        .timeline-item.agent::before { border-color:#5B21B6; }
+        .timeline-item.system::before { border-color:#16A34A; }
+        .chat-bubble {
+            display:inline-block; padding:10px 14px; border-radius:14px;
+            font-size:13px; line-height:1.55; max-width:80%;
+        }
+        .chat-bubble.user { background:#F1F5F9; color:#0F172A; }
+        .chat-bubble.agent { background:#0F172A; color:#FFFFFF; }
+        .chat-bubble.system { background:#FFF7ED; border:1px solid #FED7AA; color:#9A3412; font-size:11px; }
+        .anchor-list a {
+            display:inline-block; margin-right:14px; font-size:12px;
+            color:#475569; border-bottom:1px dashed transparent; padding-bottom:1px;
+        }
+        .anchor-list a:hover { color:#0F172A; border-bottom-color:#0F172A; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<div class="max-w-[1280px] mx-auto px-6 lg:px-10 py-10 space-y-10">
+
+    <!-- Header -->
+    <header class="space-y-4 border-b border-slate-200 pb-6">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded bg-slate-900 flex items-center justify-center text-white font-display font-extrabold shadow-sm">Ω</div>
+            <div>
+                <h1 class="font-display font-extrabold text-2xl lg:text-3xl tracking-tight">FinAgent OS · 待办：持久 Agent 对话窗口</h1>
+                <p class="text-xs font-mono text-slate-400 uppercase tracking-widest mt-1">DESIGN DOC · 2026-05-29 · UPDATED 2026-06-03 · 🔴 + 🟡 + 🟢 SHIPPED（TELEGRAM）</p>
+            </div>
+        </div>
+        <p class="text-sm text-slate-600 max-w-3xl leading-relaxed">
+            <b>痛点</b>：现在的 agent 是<b>一次性问答机</b>——每次刷新页面什么都不记得，画像要重填、上次推荐的方案对不上、没有"上周建议执行得怎么样"的复盘。
+            <b>目标</b>：让用户可以<b>持续地用同一个 agent 长期管理资产配置</b>，比如每 7 天咨询一次，agent 基于历史对话 + 上次配置 + 真实行情演化给出建议。
+        </p>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="stat p-3 text-center">
+                <div class="text-2xl font-display font-extrabold">8/8</div>
+                <div class="text-[10px] uppercase tracking-widest opacity-70 mt-1">大模块完成</div>
+            </div>
+            <div class="stat p-3 text-center">
+                <div class="text-2xl font-display font-extrabold">~1.5 天</div>
+                <div class="text-[10px] uppercase tracking-widest opacity-70 mt-1">工作量估算</div>
+            </div>
+            <div class="stat p-3 text-center">
+                <div class="text-2xl font-display font-extrabold">70%</div>
+                <div class="text-[10px] uppercase tracking-widest opacity-70 mt-1">DB schema 已有</div>
+            </div>
+            <div class="stat p-3 text-center">
+                <div class="text-2xl font-display font-extrabold">10</div>
+                <div class="text-[10px] uppercase tracking-widest opacity-70 mt-1">新增 API 端点</div>
+            </div>
+        </div>
+    </header>
+
+    <section class="panel p-4 border-l-4 border-emerald-500 space-y-3">
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="pill pill-have">✅ 进度总览</span>
+            <span class="text-[11px] font-mono text-slate-400">更新于 2026-06-03</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div class="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                <div class="text-xs font-bold text-emerald-800 mb-1">✅ 2026-06-02 · 🔴 核心闭环（#1–#6）</div>
+                <p class="text-[12px] text-emerald-900 leading-relaxed">
+                    <code>User.uuid/email/last_active_at</code>、<code>POST /api/auth/init</code>、<code>POST /api/chat</code>、
+                    前端 <code>Agent Chat</code> 面板、<code>localStorage</code> 身份、对话落库与历史/方案召回。测试 <code>47 passed</code>。
+                </p>
+            </div>
+            <div class="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                <div class="text-xs font-bold text-emerald-800 mb-1">✅ 2026-06-03 · 🟡 强烈推荐（#7–#11、#14）</div>
+                <p class="text-[12px] text-emerald-900 leading-relaxed">
+                    历史方案时间线、查看配置、N 天后归因复盘（<code>PerformanceAttribution</code> + <code>compute_attribution</code>）、
+                    我已调仓。另含自定义 LLM 接入与持仓体检 2 个 bug 修复。测试 <code>212 passed</code>，gpt.ge/deepseek-v4-pro 联调通过。
+                </p>
+            </div>
+            <div class="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                <div class="text-xs font-bold text-emerald-800 mb-1">✅ 2026-06-03 · 🟢 主动推送（#12 #13）· Telegram</div>
+                <p class="text-[12px] text-emerald-900 leading-relaxed">
+                    <code>PendingAdvice</code> 表 + <code>weekly_review_job</code>（cron 脚本 + 手动触发）+ Telegram bot 推送（@zhtinfobot），
+                    前端 chat_id 绑定 / 逐行🔔推送 / 📬 徽章。真实联调发送成功。<span class="text-amber-700">仅 #15 ConversationTurn 专项测试待补。</span>
+                </p>
+            </div>
+        </div>
+        <div class="rounded-lg bg-slate-50 border border-slate-200 p-3">
+            <div class="text-xs font-bold text-slate-700 mb-1">🔧 附加改进（6-3，非编号任务）</div>
+            <p class="text-[12px] text-slate-600 leading-relaxed">
+                统一本地配置 <code>config.yaml</code>（LLM + Telegram 默认值，唯一入口，已移除 <code>telegram_secret.py</code> 依赖）；
+                前端经 <code>GET /api/config</code> 自动预填且可见，免每次刷新重输；API Key 脱敏显示 <code>sk-i****FbC8</code>（聚焦展开、失焦打码，发请求用全量）。
+            </p>
+        </div>
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+            详见 <code>6_2_change.html</code>（🔴 核心闭环）与 <code>6_3.html</code>（🟡 历史归因 + 自定义 LLM + Telegram 推送 + config.yaml + 修复）。下方 ⑨ 实施清单逐条标注了状态。
+        </p>
+    </section>
+
+    <!-- TOC -->
+    <nav class="panel p-4 anchor-list">
+        <span class="font-mono text-[11px] uppercase tracking-widest text-slate-400 mr-3">导航：</span>
+        <a href="#pain">① 现状痛点</a>
+        <a href="#goals">② 设计目标</a>
+        <a href="#story">③ 用户故事</a>
+        <a href="#arch">④ 系统架构</a>
+        <a href="#db">⑤ DB schema</a>
+        <a href="#api">⑥ 后端 API</a>
+        <a href="#ui">⑦ 前端 UI</a>
+        <a href="#cron">⑧ 定时任务</a>
+        <a href="#plan">⑨ 实施清单</a>
+    </nav>
+
+    <!-- ============================================================
+         ① 痛点诊断
+         ============================================================ -->
+    <section id="pain" class="space-y-4">
+        <h2 class="font-display font-bold text-xl tracking-tight">① 现状痛点：为什么 agent 现在"用不了"</h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="pain-card">
+                <h4>🚫 完全无状态</h4>
+                <p>每次刷新浏览器，姓名、年龄、风险偏好、自选 ticker 全部要重填。
+                后端 `/api/allocate` 是纯 stateless POST，没有 session、没有 user 概念。</p>
+            </div>
+            <div class="pain-card">
+                <h4>🚫 历史对话不可见</h4>
+                <p>SkillRecord 表里其实已经在沉淀教训（Critic APPROVE 时落盘），
+                ConversationTurn 表的 schema 也建好了，<b>但根本没人调用</b>——
+                state_manager.record_turn() 在生产链路里没被触发。</p>
+            </div>
+            <div class="pain-card">
+                <h4>🚫 上次方案不能对比</h4>
+                <p>PortfolioSnapshot 表里有 base_weights / final_weights，
+                但前端没有任何入口能看"我上次的配置是什么"。
+                "本周 vs 上周"对比、累计净值曲线、Sharpe 演化都没有。</p>
+            </div>
+            <div class="pain-card">
+                <h4>🚫 不会主动复盘</h4>
+                <p>"上次推荐你茅台 30%，过了 7 天表现如何"——agent 完全不会算这个。
+                没有"上次给的方案 vs 这 7 天真实行情"的归因分析（attribution）。</p>
+            </div>
+            <div class="pain-card">
+                <h4>🚫 不会主动提醒</h4>
+                <p>没有定时任务。用户主动来才有交互。理想状态：每周一早上系统主动推送
+                "你的组合本周 +1.2%，但新闻里 XX 政策可能利空你重仓的 A 资产，建议..."。</p>
+            </div>
+            <div class="pain-card">
+                <h4>🚫 同一画像跨设备不连续</h4>
+                <p>张三在手机上填完，回到电脑上又是新人——没有 user_id 串起来。
+                memory 系统里的 get_or_create_user(name) 只按"姓名"匹配，碰撞概率极高。</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         ② 设计目标
+         ============================================================ -->
+    <section id="goals" class="space-y-4">
+        <h2 class="font-display font-bold text-xl tracking-tight">② 设计目标</h2>
+
+        <div class="panel p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div>
+                    <div class="text-xs font-mono uppercase tracking-widest text-slate-400 mb-2">关系延续</div>
+                    <ul class="text-sm text-slate-700 space-y-1.5 leading-relaxed list-disc list-inside">
+                        <li>一个用户 = 一个 user_id（持久 cookie + 可选邮箱登录）</li>
+                        <li>所有历史对话按 session 分组、可回溯</li>
+                        <li>agent 每次开口前先 recall 最近 N 轮 + skill 库 + 最近一次快照</li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="text-xs font-mono uppercase tracking-widest text-slate-400 mb-2">主动建议</div>
+                    <ul class="text-sm text-slate-700 space-y-1.5 leading-relaxed list-disc list-inside">
+                        <li>每 7 天 cron 检查每个 user：行情变化 / 重大新闻 / 风险偏离</li>
+                        <li>触发条件满足 → 自动生成"本周建议"并存入 PendingAdvice 表</li>
+                        <li>用户下次打开页面看到"📬 你有一份新建议"提示</li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="text-xs font-mono uppercase tracking-widest text-slate-400 mb-2">归因复盘</div>
+                    <ul class="text-sm text-slate-700 space-y-1.5 leading-relaxed list-disc list-inside">
+                        <li>每份方案落 PortfolioSnapshot 时记录"建议日"</li>
+                        <li>下次咨询时用 7 天后行情算"如果当时听了我，现在如何"</li>
+                        <li>展示净值曲线 + 各资产贡献度 + 建议命中率</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         ③ 用户故事：7 天咨询场景
+         ============================================================ -->
+    <section id="story" class="space-y-4">
+        <h2 class="font-display font-bold text-xl tracking-tight">③ 用户故事：张三的 7 天咨询节奏</h2>
+
+        <div class="panel p-6">
+            <p class="text-sm text-slate-600 mb-4 leading-relaxed">下面这条 timeline 演示"持久 agent"落地后的用户体验，特别是<b>第二、第三次访问</b>怎么不一样了。</p>
+
+            <div class="timeline">
+
+                <div class="timeline-item user">
+                    <div class="text-[10px] font-mono text-slate-400 mb-1">2026-05-01 · Day 0 · 初次访问</div>
+                    <div class="chat-bubble user">我有 50 万，平衡型，想做个长期配置</div>
+                </div>
+
+                <div class="timeline-item agent">
+                    <div class="text-[10px] font-mono text-slate-400 mb-1">Agent</div>
+                    <div class="chat-bubble agent">
+                        欢迎，张三。看起来你是新用户，我给你 5 个标的 + 权重：<br>
+                        茅台 25% / 工行 20% / 沪深300ETF 25% / 国债ETF 20% / 黄金ETF 10%<br>
+                        预期年化 8.2%，95% VaR -12.3%。<br>
+                        <span class="text-xs opacity-70">(SkillRecord id=0 — 首次咨询，无历史教训)</span>
+                    </div>
+                </div>
+
+                <div class="timeline-item system">
+                    <div class="text-[10px] font-mono text-slate-400 mb-1">System (后台静默)</div>
+                    <div class="chat-bubble system">
+                        ✓ PortfolioSnapshot #1 落盘<br>
+                        ✓ ConversationTurn ×3 入库<br>
+                        ✓ Critic APPROVE → SkillRecord #1 沉淀<br>
+                        ✓ cron 安排 2026-05-08 复盘
+                    </div>
+                </div>
+
+                <div class="timeline-item user">
+                    <div class="text-[10px] font-mono text-slate-400 mb-1">2026-05-08 · Day 7 · 系统主动推送</div>
+                    <div class="chat-bubble system">📬 张三，你有一份上周复盘 + 本周新建议（系统自动生成）</div>
+                </div>
+
+                <div class="timeline-item agent">
+                    <div class="text-[10px] font-mono text-slate-400 mb-1">Agent (基于 7 天回看)</div>
+                    <div class="chat-bubble agent">
+                        欢迎回来 👋。上周给你的方案，过去 7 天表现如下：<br>
+                        净值 +1.4%，茅台贡献 +0.8%，黄金 -0.2%，余下持平。<br>
+                        本周关键变化：⚠️ 央行降准 0.5%（5-6 公告），利好金融板块。<br>
+                        建议：把工行权重从 20% → 28%，从茅台抽 5% 出来，再砍 3% 黄金。<br>
+                        新 VaR -11.1%（改善 1.2%）。<br>
+                        <span class="text-xs opacity-70">(召回了 SkillRecord #1 + ConversationTurn 历史 + 5-2~5-7 行情 + 本周新闻)</span>
+                    </div>
+                </div>
+
+                <div class="timeline-item user">
+                    <div class="text-[10px] font-mono text-slate-400 mb-1">2026-05-15 · Day 14 · 用户主动提问</div>
+                    <div class="chat-bubble user">我想增加点黄金对冲，怎么样？</div>
+                </div>
+
+                <div class="timeline-item agent">
+                    <div class="text-[10px] font-mono text-slate-400 mb-1">Agent (累计已有 2 份历史)</div>
+                    <div class="chat-bubble agent">
+                        理解。我看了你过去两轮：第一份方案黄金 10%，第二份你接受了砍到 7%。<br>
+                        现在你想反方向加，让我对比一下：<br>
+                        — 加到 15%：组合 Sharpe -0.05，年化波动 +0.8%（不太划算）<br>
+                        — 加到 12%：Sharpe -0.02，波动 +0.4%（轻度对冲，合理）<br>
+                        建议中间档 12%，从工行减 5% 让位。继续？<br>
+                        <span class="text-xs opacity-70">(同时召回 ConversationTurn ×6 + Snapshot ×2 + SkillRecord ×3)</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         ④ 系统架构
+         ============================================================ -->
+    <section id="arch" class="space-y-4">
+        <h2 class="font-display font-bold text-xl tracking-tight">④ 系统架构：新增的组件</h2>
+
+        <div class="panel p-6 overflow-x-auto">
+            <div class="min-w-[800px]">
+                <div class="grid grid-cols-3 gap-6">
+                    <!-- 前端 -->
+                    <div class="space-y-3">
+                        <div class="text-xs font-mono uppercase tracking-widest text-slate-400">前端 · index.html</div>
+                        <div class="bg-slate-100 rounded-lg p-3 border border-slate-200">
+                            <div class="font-bold text-sm">🆕 会话窗口 ChatPanel</div>
+                            <div class="text-xs text-slate-600 mt-1">气泡聊天 UI · 历史回滚 · 输入框</div>
+                        </div>
+                        <div class="bg-slate-100 rounded-lg p-3 border border-slate-200">
+                            <div class="font-bold text-sm">🆕 身份徽章</div>
+                            <div class="text-xs text-slate-600 mt-1">右上角"张三 · session #abc123"</div>
+                        </div>
+                        <div class="bg-slate-100 rounded-lg p-3 border border-slate-200">
+                            <div class="font-bold text-sm">🆕 历史方案抽屉</div>
+                            <div class="text-xs text-slate-600 mt-1">侧滑展示历史 Snapshot 列表</div>
+                        </div>
+                        <div class="bg-slate-100 rounded-lg p-3 border border-slate-200">
+                            <div class="font-bold text-sm">🆕 归因复盘面板</div>
+                            <div class="text-xs text-slate-600 mt-1">上次方案的 7 天后净值/贡献度</div>
+                        </div>
+                        <div class="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+                            <div class="font-bold text-sm">✅ 保留</div>
+                            <div class="text-xs text-slate-600 mt-1">画像表单 · 结果面板（仅首次或主动改画像时显示）</div>
+                        </div>
+                    </div>
+
+                    <!-- 后端 -->
+                    <div class="space-y-3">
+                        <div class="text-xs font-mono uppercase tracking-widest text-slate-400">后端 · main_api.py</div>
+                        <div class="bg-slate-100 rounded-lg p-3 border border-slate-200">
+                            <div class="font-bold text-sm">🆕 POST /api/auth/init</div>
+                            <div class="text-xs text-slate-600 mt-1">cookie 没有 → 发 UUID + 建 User</div>
+                        </div>
+                        <div class="bg-slate-100 rounded-lg p-3 border border-slate-200">
+                            <div class="font-bold text-sm">🆕 POST /api/chat</div>
+                            <div class="text-xs text-slate-600 mt-1">替代 /api/allocate · 支持多轮 + 历史召回</div>
+                        </div>
+                        <div class="bg-slate-100 rounded-lg p-3 border border-slate-200">
+                            <div class="font-bold text-sm">🆕 GET /api/sessions/{uid}/turns</div>
+                            <div class="text-xs text-slate-600 mt-1">拉历史对话</div>
+                        </div>
+                        <div class="bg-slate-100 rounded-lg p-3 border border-slate-200">
+                            <div class="font-bold text-sm">🆕 GET /api/sessions/{uid}/snapshots</div>
+                            <div class="text-xs text-slate-600 mt-1">拉历史方案</div>
+                        </div>
+                        <div class="bg-slate-100 rounded-lg p-3 border border-slate-200">
+                            <div class="font-bold text-sm">🆕 GET /api/sessions/{uid}/attribution/{snap_id}</div>
+                            <div class="text-xs text-slate-600 mt-1">某份方案 7 天后归因</div>
+                        </div>
+                        <div class="bg-slate-100 rounded-lg p-3 border border-slate-200">
+                            <div class="font-bold text-sm">🆕 GET /api/sessions/{uid}/pending</div>
+                            <div class="text-xs text-slate-600 mt-1">未读的系统主动推送</div>
+                        </div>
+                    </div>
+
+                    <!-- 持久层 -->
+                    <div class="space-y-3">
+                        <div class="text-xs font-mono uppercase tracking-widest text-slate-400">持久层 · memory/</div>
+                        <div class="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+                            <div class="font-bold text-sm">✅ User</div>
+                            <div class="text-xs text-slate-600 mt-1">已有 · 加 uuid + email 字段</div>
+                        </div>
+                        <div class="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+                            <div class="font-bold text-sm">✅ ConversationTurn</div>
+                            <div class="text-xs text-slate-600 mt-1">已有 schema · 但管线没用</div>
+                        </div>
+                        <div class="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+                            <div class="font-bold text-sm">✅ PortfolioSnapshot</div>
+                            <div class="text-xs text-slate-600 mt-1">已有 · 加 advice_date 字段</div>
+                        </div>
+                        <div class="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+                            <div class="font-bold text-sm">✅ SkillRecord</div>
+                            <div class="text-xs text-slate-600 mt-1">已有，无需改</div>
+                        </div>
+                        <div class="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                            <div class="font-bold text-sm">🆕 PendingAdvice</div>
+                            <div class="text-xs text-slate-600 mt-1">cron 生成的待读建议</div>
+                        </div>
+                        <div class="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                            <div class="font-bold text-sm">🆕 PerformanceAttribution</div>
+                            <div class="text-xs text-slate-600 mt-1">每份 snapshot 的 7d/30d 后真实表现</div>
+                        </div>
+                        <div class="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                            <div class="font-bold text-sm">🆕 Session (cookie 端)</div>
+                            <div class="text-xs text-slate-600 mt-1">前端 localStorage 存 user_uuid</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         ⑤ DB schema 改动
+         ============================================================ -->
+    <section id="db" class="space-y-4">
+        <h2 class="font-display font-bold text-xl tracking-tight">⑤ DB schema 改动</h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="panel p-5">
+                <div class="flex items-center mb-2">
+                    <span class="pill pill-have mr-2">✅ 已有，加字段</span>
+                    <code class="font-mono text-sm">User</code>
+                </div>
+                <div class="code-block"><span class="kw">class</span> <span class="fn">User</span>(Base):
+    id = Column(Integer, primary_key=<span class="kw">True</span>)
+    name = Column(String(<span class="num">64</span>), index=<span class="kw">True</span>)
+    <span class="com"># 🆕 5-29 新加：</span>
+    uuid = Column(String(<span class="num">36</span>), unique=<span class="kw">True</span>, index=<span class="kw">True</span>)
+    email = Column(String(<span class="num">128</span>), nullable=<span class="kw">True</span>, unique=<span class="kw">True</span>)
+    last_active_at = Column(DateTime)</div>
+            </div>
+
+            <div class="panel p-5">
+                <div class="flex items-center mb-2">
+                    <span class="pill pill-have mr-2">✅ 已有，无需改</span>
+                    <code class="font-mono text-sm">ConversationTurn</code>
+                </div>
+                <div class="code-block"><span class="com"># 这张表 schema 5-28 就建好了</span>
+<span class="com"># 痛点：record_turn() 从来没被生产链路调用</span>
+<span class="com"># TODO：在 /api/chat 处理路径上加</span>
+<span class="com">#   state_manager.record_turn(session_id, "user", query)</span>
+<span class="com">#   state_manager.record_turn(session_id, "assistant", reply)</span></div>
+            </div>
+
+            <div class="panel p-5">
+                <div class="flex items-center mb-2">
+                    <span class="pill pill-have mr-2">✅ 已有，加字段</span>
+                    <code class="font-mono text-sm">PortfolioSnapshot</code>
+                </div>
+                <div class="code-block"><span class="kw">class</span> <span class="fn">PortfolioSnapshot</span>(Base):
+    <span class="com"># 已有字段保留 ...</span>
+    <span class="com"># 🆕 5-29 新加：</span>
+    advice_date = Column(Date, index=<span class="kw">True</span>)
+    is_followed = Column(Boolean, default=<span class="kw">None</span>)
+    <span class="com"># 用户是否真的按这个建议调仓了</span></div>
+            </div>
+
+            <div class="panel p-5">
+                <div class="flex items-center mb-2">
+                    <span class="pill pill-todo mr-2">🆕 新表</span>
+                    <code class="font-mono text-sm">PendingAdvice</code>
+                </div>
+                <div class="code-block"><span class="kw">class</span> <span class="fn">PendingAdvice</span>(Base):
+    __tablename__ = <span class="str">"pending_advice"</span>
+    id = Column(Integer, primary_key=<span class="kw">True</span>)
+    user_id = Column(Integer, ForeignKey(<span class="str">"users.id"</span>))
+    trigger_reason = Column(String(<span class="num">256</span>))
+    advice_summary = Column(Text)
+    snapshot_id = Column(Integer, ForeignKey(<span class="str">"portfolio_snapshots.id"</span>))
+    created_at = Column(DateTime)
+    read_at = Column(DateTime, nullable=<span class="kw">True</span>)
+    <span class="com"># 用户读了之后置 read_at</span></div>
+            </div>
+
+            <div class="panel p-5">
+                <div class="flex items-center mb-2">
+                    <span class="pill pill-todo mr-2">🆕 新表</span>
+                    <code class="font-mono text-sm">PerformanceAttribution</code>
+                </div>
+                <div class="code-block"><span class="kw">class</span> <span class="fn">PerformanceAttribution</span>(Base):
+    __tablename__ = <span class="str">"performance_attribution"</span>
+    id = Column(Integer, primary_key=<span class="kw">True</span>)
+    snapshot_id = Column(Integer, ForeignKey(<span class="str">"portfolio_snapshots.id"</span>))
+    horizon_days = Column(Integer)        <span class="com"># 7 / 30 / 90</span>
+    realized_return = Column(Float)
+    realized_volatility = Column(Float)
+    realized_sharpe = Column(Float)
+    asset_contributions_json = Column(Text)  <span class="com"># 各资产贡献</span>
+    computed_at = Column(DateTime)</div>
+            </div>
+
+            <div class="panel p-5">
+                <div class="flex items-center mb-2">
+                    <span class="pill pill-have mr-2">✅ 已有</span>
+                    <code class="font-mono text-sm">SkillRecord</code>
+                </div>
+                <div class="code-block"><span class="com"># 已经在跑了，Critic APPROVE 时落 lesson</span>
+<span class="com"># 复用现有逻辑即可</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         ⑥ 后端 API
+         ============================================================ -->
+    <section id="api" class="space-y-4">
+        <h2 class="font-display font-bold text-xl tracking-tight">⑥ 后端 API 设计</h2>
+
+        <div class="panel overflow-hidden">
+            <table>
+                <thead>
+                    <tr><th>方法 / 路径</th><th>用途</th><th>触发链路</th><th>状态</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>POST /api/auth/init</code></td>
+                        <td>cookie 没 uuid → 发 UUID + 建 User</td>
+                        <td>state_manager.get_or_create_user(uuid)</td>
+                        <td><span class="pill pill-have">✅ 已实现 6-2</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>POST /api/chat</code></td>
+                        <td>多轮对话主入口（替代旧 /api/allocate）</td>
+                        <td>recall_history → run_pipeline → record_turn → snapshot</td>
+                        <td><span class="pill pill-have">✅ 已实现 6-2</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /api/sessions/{uid}/turns?limit=20</code></td>
+                        <td>历史对话</td>
+                        <td>state_manager.recall_recent_turns(session_id)</td>
+                        <td><span class="pill pill-todo">🆕</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /api/sessions/{uid}/snapshots</code></td>
+                        <td>所有历史方案列表 + 时间线</td>
+                        <td>db.query(PortfolioSnapshot).filter_by(user_id)</td>
+                        <td><span class="pill pill-todo">🆕</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /api/sessions/{uid}/snapshots/{sid}</code></td>
+                        <td>某份方案详情 + 风险报告 + Critic 反馈</td>
+                        <td>db.query(...) + join PerformanceAttribution</td>
+                        <td><span class="pill pill-todo">🆕</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /api/sessions/{uid}/attribution/{sid}?horizon=7</code></td>
+                        <td>7/30 天后真实归因</td>
+                        <td>market_data 拉真实价格 → 算每资产贡献</td>
+                        <td><span class="pill pill-have">✅ 已实现 6-3</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /api/sessions/{uid}/backtest/{sid}?window=30</code></td>
+                        <td>方案权重在「过去 N 天」真实行情上的净值回测（模拟年化 / 最大回撤 / 净值曲线）</td>
+                        <td>get_snapshot_backtest → compute_backtest → run_backtest</td>
+                        <td><span class="pill pill-have">✅ 已实现 6-3</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET / POST /api/proxy</code></td>
+                        <td>系统代理自动检测 + 开关（外网走代理、A 股直连）</td>
+                        <td>net_proxy.detect/get_state/set_state</td>
+                        <td><span class="pill pill-have">✅ 已实现 6-3</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>GET /api/sessions/{uid}/pending</code></td>
+                        <td>未读系统推送</td>
+                        <td>db.query(PendingAdvice).filter(read_at=None)</td>
+                        <td><span class="pill pill-todo">🆕</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>POST /api/sessions/{uid}/pending/{aid}/ack</code></td>
+                        <td>标记某条推送为已读</td>
+                        <td>row.read_at = now()</td>
+                        <td><span class="pill pill-todo">🆕</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>POST /api/sessions/{uid}/snapshots/{sid}/follow</code></td>
+                        <td>用户标记"我按这份方案调仓了"</td>
+                        <td>snapshot.is_followed = True</td>
+                        <td><span class="pill pill-todo">🆕</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>POST /api/allocate</code></td>
+                        <td>旧接口 — 保留兼容性，但内部转发到 /api/chat</td>
+                        <td>透传 + 自动建匿名 session</td>
+                        <td><span class="pill pill-have">✅ 改造</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="panel p-5">
+            <h3 class="text-sm font-bold mb-2">关键流程：POST /api/chat 内部</h3>
+            <div class="code-block"><span class="kw">async def</span> <span class="fn">chat</span>(req: ChatRequest):
+    user_uuid = req.cookies.get(<span class="str">"finagent_uuid"</span>)
+    user = state_manager.<span class="fn">get_user_by_uuid</span>(user_uuid)
+    session_id = req.session_id <span class="kw">or</span> <span class="fn">make_session_id</span>(user.id)
+
+    <span class="com"># 1️⃣ 召回历史</span>
+    history = state_manager.<span class="fn">recall_recent_turns</span>(session_id, limit=<span class="num">10</span>)
+    snapshots = state_manager.<span class="fn">recall_user_snapshots</span>(user.id, limit=<span class="num">3</span>)
+    skills = state_manager.<span class="fn">recall_similar_skills</span>(user.profile, limit=<span class="num">3</span>)
+
+    <span class="com"># 2️⃣ 落用户输入</span>
+    state_manager.<span class="fn">record_turn</span>(session_id, <span class="str">"user"</span>, req.message, user_id=user.id)
+
+    <span class="com"># 3️⃣ 跑工作流（带历史 context）</span>
+    result = <span class="fn">run_fin_agent_pipeline</span>(
+        query=req.message,
+        api_key=req.api_key,
+        user_profile=user.profile,
+        history=history,          <span class="com"># 🆕 新增参数</span>
+        past_snapshots=snapshots, <span class="com"># 🆕 新增参数</span>
+    )
+
+    <span class="com"># 4️⃣ 落 assistant 回复 + snapshot</span>
+    state_manager.<span class="fn">record_turn</span>(session_id, <span class="str">"assistant"</span>, result[<span class="str">"summary"</span>], user_id=user.id)
+    state_manager.<span class="fn">record_snapshot</span>(user.id, ...)
+
+    <span class="kw">return</span> result</div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         ⑦ 前端 UI
+         ============================================================ -->
+    <section id="ui" class="space-y-4">
+        <h2 class="font-display font-bold text-xl tracking-tight">⑦ 前端 UI 设计</h2>
+
+        <div class="panel p-6">
+            <p class="text-sm text-slate-600 mb-4">主页面布局从"上下结构"改为"左聊天 + 右画像/结果"的双栏布局：</p>
+
+            <div class="code-block">┌─────────────────────────────────────────────────────────────────┐
+│  📊 FinAgent OS              [张三 · session #abc123]  [📬 1]  │  ← 顶部 bar
+├──────────────────────────┬──────────────────────────────────────┤
+│                          │  ┌────────────────────────────────┐  │
+│  💬 对话历史              │  │ 当前画像                       │  │
+│  ┌────────────────────┐  │  │ 张三 · 32 · 平衡型             │  │
+│  │ 用户气泡            │  │  │ [📝 修改]                      │  │
+│  └────────────────────┘  │  └────────────────────────────────┘  │
+│  ┌────────────────────┐  │                                       │
+│  │ Agent 气泡          │  │  ┌────────────────────────────────┐  │
+│  │ + 内嵌方案卡片      │  │  │ 最新方案 #3                    │  │
+│  └────────────────────┘  │  │ (展开后 = 现有的结果面板)      │  │
+│  ...                     │  └────────────────────────────────┘  │
+│                          │                                       │
+│  ┌────────────────────┐  │  ┌────────────────────────────────┐  │
+│  │  输入框 + 发送      │  │  │ 📈 7 天归因复盘                │  │
+│  └────────────────────┘  │  │ 上次方案 +1.4% (净值曲线)     │  │
+│                          │  └────────────────────────────────┘  │
+│                          │                                       │
+│                          │  ┌────────────────────────────────┐  │
+│                          │  │ 🕐 历史时间线                  │  │
+│                          │  │ 5-15 调整黄金 12%              │  │
+│                          │  │ 5-08 接受降准建议              │  │
+│                          │  │ 5-01 首次配置 5 标的           │  │
+│                          │  └────────────────────────────────┘  │
+└──────────────────────────┴──────────────────────────────────────┘
+            </div>
+
+            <p class="text-xs text-slate-500 mt-3 italic">
+                旧的"📋 当前资产存量"那 4 桶假数据面板可以删了（之前对话已确认是占位）。
+            </p>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         ⑧ 定时任务
+         ============================================================ -->
+    <section id="cron" class="space-y-4">
+        <h2 class="font-display font-bold text-xl tracking-tight">⑧ 定时任务：每 7 天主动复盘 + 推送 <span class="pill pill-have ml-2">✅ 已落地 6-3（Telegram）</span></h2>
+
+        <div class="panel p-4 border-l-4 border-emerald-500">
+            <p class="text-sm text-emerald-900 leading-relaxed">
+                <b>已实现</b>：<code>data_ops/review_job.py</code> 的 <code>weekly_review_job()</code>（到期方案 → 归因 → 生成建议 → 落 <code>PendingAdvice</code> → Telegram 推送）；
+                <code>scripts/cron_weekly_review.py</code> 供系统计划任务调度（<code>--force</code> / <code>--no-push</code>）；
+                也可经 <code>POST /api/cron/weekly-review</code> 手动触发。推送通道为 <b>Telegram bot</b>（<code>data_ops/notifier.py</code> + <code>config.TelegramConfig</code>），
+                替代原设计的邮件/站内。已用 @zhtinfobot 真实联调发送成功。下方为原始设计草稿。
+            </p>
+        </div>
+
+        <div class="panel p-6">
+            <p class="text-sm text-slate-600 mb-3">（原设计草稿）用 APScheduler 或简单 cron，每天凌晨跑一次 review job：</p>
+
+            <div class="code-block"><span class="com"># scripts/cron_weekly_review.py — 每天 06:00 跑</span>
+<span class="kw">def</span> <span class="fn">weekly_review_job</span>():
+    today = dt.date.today()
+    seven_days_ago = today - dt.timedelta(days=<span class="num">7</span>)
+
+    <span class="com"># 找出 7 天前出的方案，还没做过归因的</span>
+    snapshots = db.<span class="fn">query</span>(PortfolioSnapshot).<span class="fn">filter</span>(
+        PortfolioSnapshot.advice_date == seven_days_ago,
+        ~PortfolioSnapshot.id.in_(db.<span class="fn">query</span>(PerformanceAttribution.snapshot_id))
+    ).<span class="fn">all</span>()
+
+    <span class="kw">for</span> snap <span class="kw">in</span> snapshots:
+        <span class="com"># 1️⃣ 算这 7 天真实表现</span>
+        attribution = <span class="fn">compute_attribution</span>(snap, horizon=<span class="num">7</span>)
+        db.<span class="fn">add</span>(attribution)
+
+        <span class="com"># 2️⃣ 检查是否要触发新建议</span>
+        <span class="kw">if</span> <span class="fn">should_trigger_new_advice</span>(snap, attribution):
+            advice = <span class="fn">generate_advice</span>(snap.user, attribution)
+            db.<span class="fn">add</span>(PendingAdvice(
+                user_id=snap.user_id,
+                trigger_reason=advice.reason,  <span class="com"># "VaR 偏离" / "重大新闻" 等</span>
+                advice_summary=advice.text,
+                snapshot_id=<span class="fn">save_new_snapshot</span>(advice).id,
+            ))
+
+    db.<span class="fn">commit</span>()
+
+<span class="com"># 触发新建议的条件（任一满足）：</span>
+<span class="com"># - 7 天后真实 VaR &gt; 用户风险等级红线 1.5x</span>
+<span class="com"># - 持仓资产里有 ≥ 1 只出现"重大利空"新闻</span>
+<span class="com"># - 上次方案已经 ≥ 7 天没被 follow（提醒用户）</span></div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         ⑨ 实施清单
+         ============================================================ -->
+    <section id="plan" class="space-y-4">
+        <h2 class="font-display font-bold text-xl tracking-tight">⑨ 实施清单（按依赖顺序）</h2>
+
+        <div class="panel overflow-hidden">
+            <table>
+                <thead>
+                    <tr><th>#</th><th>任务</th><th>层</th><th>依赖</th><th>预估</th><th>价值</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>User 表加 uuid/email/last_active_at 字段 · 写 migrate 脚本 <span class="pill pill-have ml-2">✅ 已完成 6-2</span></td>
+                        <td>DB</td>
+                        <td>—</td>
+                        <td>0.5h</td>
+                        <td>🔴 必</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>POST /api/auth/init · 发 uuid cookie · 自动建 User <span class="pill pill-have ml-2">✅ 已完成 6-2</span></td>
+                        <td>后端</td>
+                        <td>#1</td>
+                        <td>1h</td>
+                        <td>🔴 必</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>POST /api/chat 主入口 · recall + run_pipeline + record_turn <span class="pill pill-have ml-2">✅ 已完成 6-2</span></td>
+                        <td>后端</td>
+                        <td>#2</td>
+                        <td>3h</td>
+                        <td>🔴 必</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>run_fin_agent_pipeline() 加 history / past_snapshots 参数 · T_t prompt 注入 <span class="pill pill-have ml-2">✅ 已完成 6-2</span></td>
+                        <td>核心</td>
+                        <td>#3</td>
+                        <td>2h</td>
+                        <td>🔴 必</td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>前端 ChatPanel 组件 · 气泡 + 输入 + 历史滚动 <span class="pill pill-have ml-2">✅ 已完成 6-2</span></td>
+                        <td>前端</td>
+                        <td>#3</td>
+                        <td>3h</td>
+                        <td>🔴 必</td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td>前端 localStorage 存 user_uuid · 启动时调 /api/auth/init <span class="pill pill-have ml-2">✅ 已完成 6-2</span></td>
+                        <td>前端</td>
+                        <td>#2</td>
+                        <td>1h</td>
+                        <td>🔴 必</td>
+                    </tr>
+                    <tr>
+                        <td>7</td>
+                        <td>GET /api/sessions/{uid}/snapshots · 历史方案列表 <span class="pill pill-have ml-2">✅ 已完成 6-3</span></td>
+                        <td>后端</td>
+                        <td>#1</td>
+                        <td>1h</td>
+                        <td>🟡 强</td>
+                    </tr>
+                    <tr>
+                        <td>8</td>
+                        <td>前端"历史时间线"侧边栏 <span class="pill pill-have ml-2">✅ 已完成 6-3</span></td>
+                        <td>前端</td>
+                        <td>#7</td>
+                        <td>1.5h</td>
+                        <td>🟡 强</td>
+                    </tr>
+                    <tr>
+                        <td>9</td>
+                        <td>PortfolioSnapshot 加 advice_date / is_followed <span class="pill pill-have ml-2">✅ 已完成 6-3</span></td>
+                        <td>DB</td>
+                        <td>—</td>
+                        <td>0.3h</td>
+                        <td>🟡 强</td>
+                    </tr>
+                    <tr>
+                        <td>10</td>
+                        <td>新表 PerformanceAttribution · compute_attribution() 实现 <span class="pill pill-have ml-2">✅ 已完成 6-3</span></td>
+                        <td>DB+后端</td>
+                        <td>#9</td>
+                        <td>2h</td>
+                        <td>🟡 强</td>
+                    </tr>
+                    <tr>
+                        <td>11</td>
+                        <td>GET /api/sessions/{uid}/attribution/{sid} · 前端归因复盘面板 <span class="pill pill-have ml-2">✅ 已完成 6-3</span></td>
+                        <td>全栈</td>
+                        <td>#10</td>
+                        <td>2h</td>
+                        <td>🟡 强</td>
+                    </tr>
+                    <tr>
+                        <td>12</td>
+                        <td>新表 PendingAdvice · cron 脚本 weekly_review_job <span class="pill pill-have ml-2">✅ 已完成 6-3（Telegram）</span></td>
+                        <td>DB+脚本</td>
+                        <td>#10</td>
+                        <td>3h</td>
+                        <td>🟢 锦上添花</td>
+                    </tr>
+                    <tr>
+                        <td>13</td>
+                        <td>GET /api/sessions/{uid}/pending · 前端 📬 推送徽章 + Telegram bot 推送 <span class="pill pill-have ml-2">✅ 已完成 6-3（Telegram）</span></td>
+                        <td>全栈</td>
+                        <td>#12</td>
+                        <td>1.5h</td>
+                        <td>🟢 锦上添花</td>
+                    </tr>
+                    <tr>
+                        <td>14</td>
+                        <td>POST /api/sessions/{uid}/snapshots/{sid}/follow · 前端"我已调仓"按钮 <span class="pill pill-have ml-2">✅ 已完成 6-3</span></td>
+                        <td>全栈</td>
+                        <td>#9</td>
+                        <td>1h</td>
+                        <td>🟢 锦上添花</td>
+                    </tr>
+                    <tr>
+                        <td>15</td>
+                        <td>测试套件补 ConversationTurn 在生产链路里的覆盖 <span class="pill pill-todo ml-2">⏳ 待做</span><br><span class="text-slate-400 text-xs">6-3 已补归因/时间线 14 条测试；ConversationTurn 生产链路专项覆盖仍待补</span></td>
+                        <td>测试</td>
+                        <td>#3</td>
+                        <td>2h</td>
+                        <td>🟡 强</td>
+                    </tr>
+                    <tr>
+                        <td>16</td>
+                        <td>历史区间净值回测 · GET /api/sessions/{uid}/backtest/{sid} · 前端「净值回测」按钮（模拟年化 / 最大回撤 / 净值曲线）<span class="pill pill-have ml-2">✅ 已完成 6-3</span><br><span class="text-slate-400 text-xs">把闲置的 run_backtest 引擎接出来；compute_backtest + get_snapshot_backtest；窗口 [today-N, today]；真实行情拉不到时降级为「离线模拟·无参考意义」（确定性可复现，前端琥珀徽章）；8 条测试全过</span></td>
+                        <td>全栈</td>
+                        <td>#7 #9</td>
+                        <td>1.5h</td>
+                        <td>🟢 锦上添花</td>
+                    </tr>
+                    <tr>
+                        <td>17</td>
+                        <td>系统代理自动检测 + 显式开关 · GET/POST /api/proxy · 前端 TG 下方开关（打开=自动连接）<span class="pill pill-have ml-2">✅ 已完成 6-3</span><br><span class="text-slate-400 text-xs">net_proxy 模块：Telegram + 全部行情统一走系统代理；国内行情东财→新浪双源兜底（eastmoney 经 Clash 间歇被掐，sina 稳定可达，实测拉到 18 行真实数据）；另修四个取数 bug：yfinance proxy= 参数、MultiIndex 列二维、ETF 被当个股查返回空（→ fund_etf_hist_em）、批量重试退避；运行前提：Clash 开 + 代理开关打开；测试全过</span></td>
+                        <td>全栈</td>
+                        <td>#13</td>
+                        <td>1.5h</td>
+                        <td>🟢 锦上添花</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
+            <div class="panel p-4 border-l-4 border-emerald-500">
+                <div class="text-xs font-mono uppercase text-slate-400">🔴 必做（核心闭环） <span class="pill pill-have ml-1">✅ 6-2 落地</span></div>
+                <div class="text-sm text-slate-700 mt-1">#1 #2 #3 #4 #5 #6 — 多轮对话 + 历史记忆已生效</div>
+            </div>
+            <div class="panel p-4 border-l-4 border-emerald-500">
+                <div class="text-xs font-mono uppercase text-slate-400">🟡 强烈推荐 <span class="pill pill-have ml-1">✅ 6-3 落地</span></div>
+                <div class="text-sm text-slate-700 mt-1">#7 #8 #9 #10 #11 #14 — 历史时间线 + 查看配置 + 归因复盘 + 我已调仓，已联调通过（gpt.ge / deepseek-v4-pro）。<span class="text-amber-700">#15 测试覆盖部分待补</span></div>
+            </div>
+            <div class="panel p-4 border-l-4 border-emerald-500">
+                <div class="text-xs font-mono uppercase text-slate-400">🟢 锦上添花 <span class="pill pill-have ml-1">✅ 6-3 落地（Telegram）</span></div>
+                <div class="text-sm text-slate-700 mt-1">#12 #13 — PendingAdvice + weekly_review_job + Telegram bot 推送（@zhtinfobot）+ 前端 chat_id 绑定/🔔/📬，已真实联调；#16 历史区间净值回测；#17 系统代理自动检测+开关</div>
+            </div>
+            <div class="panel p-4">
+                <div class="text-xs font-mono uppercase text-slate-400">进度</div>
+                <div class="text-sm text-slate-700 mt-1">🔴 6/6 ✅ · 🟡 6/7 ✅（#15 部分）· 🟢 4/4 ✅（#12 #13 #16 #17）— 主线全清，仅 #15 测试补充待办</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         风险与注意事项
+         ============================================================ -->
+    <section class="panel p-6 space-y-3">
+        <h2 class="font-display font-bold text-lg">⚠️ 风险与注意事项</h2>
+        <ul class="text-sm text-slate-700 space-y-2 list-disc list-inside leading-relaxed">
+            <li><b>多用户隔离</b>：[[doc-update-on-big-changes]] memory 提到当前 state_manager 按 name upsert，碰撞风险高。改成 uuid 索引后必须迁移现有 SkillRecord 的 profile_signature。</li>
+            <li><b>对话历史污染 prompt</b>：召回 10 轮 ≈ 5000 token，加上 universe + 风险报告 + 新闻可能超 reasoner 上下文。需要做"重要轮次保留"策略（用 _truncate 已有的字符截断不够，要按"轮次类型"留）。</li>
+            <li><b>归因计算的现实可行性</b>：用 yfinance / akshare 回查 7 天前到今天的真实价格，但虚拟币/美股可能受限于网络可达性。需要降级到"用 SkillRecord 推测"。</li>
+            <li><b>净值回测(#16) / 归因复盘 依赖真实行情通道</b>：二者共用 <code>fetch_price_window</code>（<b>无离线兜底</b>，不同于生成方案的 <code>fetch_and_calculate</code>），必须能访问 <code>push2his.eastmoney.com</code> 行情 API。实测某些网络下该 API 被 RST（主页可达、量化接口连接重置，走/不走代理都失败）→ 返回空 → 前端「暂无法回测 / 等待数据积累」。<b>是数据可达性问题，非代码 bug</b>，逻辑以 mock 单测覆盖（回测 6 + 归因 4 全过）。须在能直连 eastmoney 行情 API 的环境运行；Clash 等代理需让 A 股行情走直连。</li>
+            <li><b>cron 进程</b>：建议用 APScheduler 内嵌在 FastAPI 进程里（最简），不建议另起一个独立进程（运维复杂）。</li>
+            <li><b>用户主动 vs 被动</b>：建议第一版只支持"用户打开页面才生成新建议"，不真的发邮件/推送。先验证产品逻辑，再做通知通道。</li>
+            <li><b>前后端耦合规则</b>：见 [[frontend-backend-coupling]]——新 API 字段必须前端同步加渲染逻辑，否则等于没做。</li>
+        </ul>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 font-mono py-8 border-t border-slate-200">
+        FinAgent OS · todo / persistent chat design · 2026-05-29 · updated 2026-06-03 · +净值回测(#16) +系统代理开关(#17) · author: claude w/ 张同学
+    </footer>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local virtual environments
+.venv/
+venv/
+
+# Local configuration and secrets
+fin_asset_agent/config.yaml
+.env
+.env.*
+!.env.example
+
+# Runtime data
+fin_asset_agent/memory/*.db
+fin_asset_agent/data_ops/cache/
+*.log
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

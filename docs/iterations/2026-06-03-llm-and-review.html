@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinAgent OS · 2026-06-03 LLM 接入与持仓复盘</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+        body {
+            font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            background: radial-gradient(100% 100% at 50% 0%, #FFFFFF 0%, #F1F5F9 100%);
+            color: #0F172A;
+        }
+        .font-display { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .panel {
+            background:#FFFFFF;
+            border:1px solid rgba(15,23,42,0.06);
+            box-shadow:0 1px 3px rgba(0,0,0,0.01), 0 10px 30px -10px rgba(15,23,42,0.04);
+            border-radius:14px;
+        }
+        .stat { background:#0F172A; color:#FFFFFF; border-radius:12px; }
+        .pill { display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; }
+        .pill-done { background:#DCFCE7; color:#166534; }
+        .pill-fix { background:#FFE4E6; color:#9F1239; }
+        .pill-next { background:#FEF3C7; color:#92400E; }
+        .pill-info { background:#DBEAFE; color:#1E40AF; }
+        .pill-risk { background:#FEE2E2; color:#991B1B; }
+        .code-block {
+            background:#0F172A;
+            color:#E2E8F0;
+            padding:14px 18px;
+            border-radius:10px;
+            font-family:'JetBrains Mono', monospace;
+            font-size:12.5px;
+            line-height:1.65;
+            overflow-x:auto;
+            white-space:pre;
+        }
+        .code-block .com { color:#64748B; }
+        .code-block .str { color:#86EFAC; }
+        .code-block .kw  { color:#93C5FD; }
+        table { border-collapse:collapse; width:100%; }
+        th, td { text-align:left; padding:9px 12px; border-bottom:1px solid #E2E8F0; font-size:13px; vertical-align:top; }
+        th { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#64748B; background:#F8FAFC; }
+        td code { background:#F1F5F9; padding:1px 6px; border-radius:4px; font-size:12px; }
+        .flow-node {
+            display:inline-block;
+            padding:6px 10px;
+            border-radius:8px;
+            border:1px solid #CBD5E1;
+            background:#FFFFFF;
+            font-family:'JetBrains Mono', monospace;
+            font-size:11px;
+            font-weight:600;
+            white-space:nowrap;
+        }
+        .flow-done { background:#DCFCE7; border-color:#86EFAC; color:#166534; }
+        .flow-new  { background:#DBEAFE; border-color:#93C5FD; color:#1E40AF; }
+        .flow-bad  { background:#FFE4E6; border-color:#FDA4AF; color:#9F1239; }
+        .badcard  { border:1px solid #FECDD3; background:#FFF1F2; border-radius:10px; }
+        .goodcard { border:1px solid #BBF7D0; background:#F0FDF4; border-radius:10px; }
+    </style>
+</head>
+<body class="min-h-screen">
+<div class="max-w-[1280px] mx-auto px-6 lg:px-10 py-10 space-y-10">
+
+    <header class="space-y-4 border-b border-slate-200 pb-6">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded bg-slate-900 flex items-center justify-center text-white font-display font-extrabold shadow-sm">惟</div>
+            <div>
+                <h1 class="font-display font-extrabold text-2xl lg:text-3xl tracking-tight">FinAgent OS - 6-3 自定义 LLM 接入 · 持仓体检修复 · 历史归因复盘</h1>
+                <p class="text-xs font-mono text-slate-400 uppercase tracking-widest mt-1">CUSTOM LLM · REVIEW BUGFIX · HISTORY TIMELINE + ATTRIBUTION - 2026-06-03</p>
+            </div>
+        </div>
+        <p class="text-sm text-slate-600 max-w-4xl leading-relaxed">
+            本次做了三件事。① <b>自定义 LLM 接入</b>：把原先只能填 <code>api_key</code> 扩展为可自定义
+            <code>base_url</code> 接口地址与模型 ID（单模型一键覆盖 + 高级分档覆盖），留空回退 <code>config.py</code> 默认，老用户无感。
+            ② <b>持仓体检修复</b>：修掉 <code>PORTFOLIO_REVIEW</code> 分支的两个 bug——类别级持仓导致的
+            <code>协方差矩阵 (0,)</code> 报错与空转 REVISE，以及风控节点对 LLM 返回数组时的
+            <code>'list' object has no attribute 'get'</code> 崩溃。
+            ③ <b>历史归因复盘（todo 🟡 档 #7–#11/#14）</b>：落地历史方案时间线、查看配置、N 天后真实表现归因与"我已调仓"标记，
+            并用 <code>https://api.gpt.ge/v1</code> · <code>deepseek-v4-pro</code> 全链路联调通过。
+            ④ <b>Telegram 主动推送（todo 🟢 档 #12/#13）</b>：<code>PendingAdvice</code> 表 + <code>weekly_review_job</code> + cron 脚本 + Telegram bot 通道，
+            到期方案自动生成复盘建议推送到用户 Telegram，已用 @zhtinfobot 真实联调。
+            ⑤ <b>统一本地配置 <code>config.yaml</code></b>：LLM + Telegram 默认值集中到 <code>config.yaml</code>（唯一入口，环境变量可覆盖），
+            前端启动经 <code>GET /api/config</code> 自动预填且可见，免每次刷新重输；API Key 脱敏显示为 <code>sk-i****FbC8</code>。
+            ⑥ <b>历史区间净值回测</b>：把闲置的 <code>run_backtest</code> 引擎接到 API + 前端，按方案权重在「过去 N 天」真实行情上估算模拟年化收益、最大回撤与净值曲线。
+            ⑦ <b>系统代理自动检测 + 开关</b>：启动自动探测系统代理；前端 TG 绑定下方加显式开关（打开=自动连接）。Telegram 推送 + 全部行情（A股 eastmoney + 海外 yfinance）统一走系统代理——eastmoney 经 Clash 由其干净 DNS+China 规则 DIRECT 连接（python 原生直连会因 DNS 污染 RST）。
+        </p>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="stat p-3 text-center">
+                <div class="text-2xl font-display font-extrabold">4</div>
+                <div class="text-[10px] uppercase tracking-widest opacity-70 mt-1">主题（接入/修复/归因/推送）</div>
+            </div>
+            <div class="stat p-3 text-center">
+                <div class="text-2xl font-display font-extrabold">13</div>
+                <div class="text-[10px] uppercase tracking-widest opacity-70 mt-1">新增 API 端点</div>
+            </div>
+            <div class="stat p-3 text-center">
+                <div class="text-2xl font-display font-extrabold">267</div>
+                <div class="text-[10px] uppercase tracking-widest opacity-70 mt-1">测试通过 (+69)</div>
+            </div>
+            <div class="stat p-3 text-center">
+                <div class="text-2xl font-display font-extrabold">100%</div>
+                <div class="text-[10px] uppercase tracking-widest opacity-70 mt-1">向后兼容</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============ FEATURE: 自定义 LLM 接入 ============ -->
+    <section class="panel p-6 space-y-4">
+        <div class="flex items-center gap-3">
+            <span class="pill pill-done">FEATURE</span>
+            <h2 class="font-display font-bold text-xl tracking-tight">自定义 LLM 接口地址与模型 ID</h2>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            前端在 API Key 下方新增 <code>接口地址</code> 与 <code>模型 ID</code> 两个输入框，以及一个「▸ 高级（分档模型覆盖）」
+            折叠区。单模型框覆盖全部三档，高级区可单独指定 <code>router / chat / primary</code> 三档模型。
+            五个字段（<code>base_url / model / router_model / chat_model / primary_model</code>）随 <code>/api/allocate</code>
+            与 <code>/api/chat</code> 透传到底层 6 个 LLM 调用点，任一留空都回退 <code>config.py</code> 默认。
+        </p>
+
+        <div class="overflow-x-auto">
+            <div class="min-w-[900px] flex items-center gap-2">
+                <span class="flow-node flow-new">前端表单 base_url / model</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">main_api 请求模型</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">run_fin_agent_pipeline 解析</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">GraphState 三档模型</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-done">call_deepseek / CoreRouter</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+                <div class="text-xs font-mono text-slate-400 uppercase mb-2">请求体新增字段（均可选）</div>
+                <div class="code-block"><span class="kw">POST</span> /api/allocate
+{
+  <span class="str">"api_key"</span>:       <span class="str">"sk-..."</span>,
+  <span class="str">"base_url"</span>:      <span class="str">"https://my-proxy/v1"</span>,  <span class="com">// 留空=DeepSeek</span>
+  <span class="str">"model"</span>:         <span class="str">"deepseek-chat"</span>,        <span class="com">// 覆盖全部三档</span>
+  <span class="str">"router_model"</span>:  <span class="kw">null</span>,   <span class="com">// 高级：分档覆盖</span>
+  <span class="str">"chat_model"</span>:    <span class="kw">null</span>,
+  <span class="str">"primary_model"</span>: <span class="kw">null</span>
+}</div>
+            </div>
+            <div>
+                <div class="text-xs font-mono text-slate-400 uppercase mb-2">模型解析优先级</div>
+                <div class="code-block"><span class="com"># 每一档独立解析，留空逐级回退</span>
+model_router  = router_model  <span class="kw">or</span> model  <span class="kw">or</span> cfg.router
+model_chat    = chat_model    <span class="kw">or</span> model  <span class="kw">or</span> cfg.chat
+model_primary = primary_model <span class="kw">or</span> model  <span class="kw">or</span> cfg.primary
+
+<span class="com"># 分档 &gt; 单模型 &gt; config.py 默认</span>
+<span class="com"># base_url 同理：base_url or cfg.base_url</span></div>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr><th>层</th><th>改动</th><th>关键文件</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>前端</td>
+                    <td>API Key 下新增 <code>接口地址</code> / <code>模型 ID</code> 输入框 + 高级折叠区；<code>getLLMOverrides()</code> 只带非空字段，合入两条请求。</td>
+                    <td><code>fin_asset_agent/index.html</code></td>
+                </tr>
+                <tr>
+                    <td>后端 API</td>
+                    <td>抽出 <code>LLMOverrideMixin</code>，<code>AllocationRequest</code> / <code>ChatRequest</code> 继承得到 5 个可选字段并透传。</td>
+                    <td><code>fin_asset_agent/main_api.py</code></td>
+                </tr>
+                <tr>
+                    <td>Workflow</td>
+                    <td><code>run_fin_agent_pipeline()</code> 新增 5 个参数，解析三档模型写入 <code>GraphState</code>（<code>base_url / model_router / model_chat / model_primary</code>）。</td>
+                    <td><code>core_brain/workflow.py</code></td>
+                </tr>
+                <tr>
+                    <td>LLM 客户端</td>
+                    <td><code>call_deepseek</code> / <code>call_deepseek_text</code> 新增 <code>base_url</code> 参数；<code>OpenAI(base_url=base_url or cfg.base_url)</code>。</td>
+                    <td><code>core_brain/agents/llm_client.py</code></td>
+                </tr>
+                <tr>
+                    <td>路由 / Agent</td>
+                    <td><code>CoreRouter</code> 接 <code>base_url + router_model</code>；选品 / Critic / 微调 / 风控 4 个调用点透传 <code>base_url + model_primary</code>。</td>
+                    <td><code>router.py · analyst.py · asset_selector.py · critic.py · portfolio_mgr.py · risk_officer.py</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- ============ FIX 1: 协方差 (0,) ============ -->
+    <section class="panel p-6 space-y-4">
+        <div class="flex items-center gap-3">
+            <span class="pill pill-fix">BUGFIX 1</span>
+            <h2 class="font-display font-bold text-xl tracking-tight">持仓体检：协方差矩阵 (0,) 与资产数 0 不一致</h2>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            触发路径为 <code>PORTFOLIO_REVIEW</code>。当持仓是 <code>Cash_Equivalents / Fixed_Income / Equities / Alternative_Assets</code>
+            这类<strong>类别名而非真实 ticker</strong> 时，<code>reviewer.py</code> 拉不到行情，给出空 <code>cov_matrix</code> /
+            <code>expected_returns</code>，却仍返回 4 个资产名与权重。<code>RiskSim</code> 节点已正确跳过，但
+            <code>Critic._rerun_sandbox</code> 缺同款守卫，只要 <code>adjusted_weights</code> 非空就硬跑沙箱，空协方差
+            <code>(0,)</code> 撞上 <code>backtest_engine</code> 的 shape 断言，并连刷 3 次 REVISE 才被安全阀放行。
+        </p>
+        <div class="code-block"><span class="com"># 日志现场</span>
+[Review] 已有持仓审查: ['Cash_Equivalents', 'Fixed_Income', 'Equities', 'Alternative_Assets'] (跳过 S_t/A_t)
+[RiskSim] 缺少基础权重/行情，跳过
+[C_t] 沙箱重算失败: 协方差矩阵 (0,) 与资产数 0 不一致     <span class="com"># ← 报错</span>
+[C_t] Critic: REVISE (score=55) -&gt; REVISE (score=45) -&gt; APPROVE (retry=2)   <span class="com"># ← 空转 3 次</span></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="badcard p-4">
+                <div class="text-xs font-mono text-rose-700 uppercase mb-2">修复前</div>
+                <p class="text-sm text-rose-900 leading-relaxed">
+                    <code>_rerun_sandbox</code> 无条件调用 <code>comprehensive_risk_report</code>；空协方差进维度校验抛错，
+                    Critic 拿不到量化对比 → 反复 REVISE 直到 retry≥2 强制放行（浪费 3 次 LLM 调用）。
+                </p>
+            </div>
+            <div class="goodcard p-4">
+                <div class="text-xs font-mono text-emerald-700 uppercase mb-2">修复后</div>
+                <p class="text-sm text-emerald-900 leading-relaxed">
+                    <code>_rerun_sandbox</code> 先判 <code>expected_returns / cov_matrix / available_assets</code> 是否为空，
+                    空则静默跳过（不报错）。Critic 检测到无量化基础时<strong>首轮即放行</strong>，不再空转。
+                </p>
+            </div>
+        </div>
+        <table>
+            <thead><tr><th>文件</th><th>改动</th></tr></thead>
+            <tbody>
+                <tr><td><code>core_brain/agents/critic.py</code></td><td><code>_rerun_sandbox</code> 加空数据守卫；<code>critic_node</code> 在 <code>has_quant=False</code> 时与 retry 上限同等对待，首轮强制 APPROVE。</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- ============ FIX 2: list.get ============ -->
+    <section class="panel p-6 space-y-4">
+        <div class="flex items-center gap-3">
+            <span class="pill pill-fix">BUGFIX 2</span>
+            <h2 class="font-display font-bold text-xl tracking-tight">风控节点：'list' object has no attribute 'get'</h2>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            <code>risk_officer.py</code> 假设 LLM 返回 JSON 对象，直接 <code>res.get("risk_status")</code>。当模型返回
+            JSON <strong>数组</strong>时崩溃，被 except 兜成假的“检查通过”——等于风控没真正执行。诱因之一是该节点
+            prompt 缺了外层 <code>{}</code>，弱模型（换接口/换模型后更易出现）容易返回成数组。修复采用两层防御：
+            <code>call_deepseek</code> 统一对数组返回做解包容错（惠及全部 JSON 调用点），并补全 prompt 的对象格式约束。
+        </p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+                <div class="text-xs font-mono text-slate-400 uppercase mb-2">call_deepseek 容错解包</div>
+                <div class="code-block">data = json.loads(content)
+<span class="com"># 个别供应商不遵守 json_object，</span>
+<span class="com"># 把对象包成数组返回</span>
+<span class="kw">if</span> isinstance(data, list):
+    data = next(
+        (x <span class="kw">for</span> x <span class="kw">in</span> data <span class="kw">if</span> isinstance(x, dict)),
+        {})
+<span class="kw">return</span> data</div>
+            </div>
+            <div>
+                <div class="text-xs font-mono text-slate-400 uppercase mb-2">risk_officer prompt 补 {}</div>
+                <div class="code-block">请严格输出 JSON 对象
+（必须以 { 开头、} 结尾，不要返回数组）：
+{
+  <span class="str">"risk_status"</span>: <span class="str">"PASS"</span> 或 <span class="str">"FAILED"</span>,
+  <span class="str">"risk_report"</span>: <span class="str">"..."</span>
+}</div>
+            </div>
+        </div>
+        <table>
+            <thead><tr><th>文件</th><th>改动</th></tr></thead>
+            <tbody>
+                <tr><td><code>core_brain/agents/llm_client.py</code></td><td><code>call_deepseek</code> 对 <code>list</code> 返回解包出首个 dict。</td></tr>
+                <tr><td><code>core_brain/agents/risk_officer.py</code></td><td>审查 prompt 补全外层 <code>{}</code> 与“不要返回数组”约束。</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- ============ FEATURE: 历史时间线 + 归因复盘 ============ -->
+    <section class="panel p-6 space-y-4">
+        <div class="flex items-center gap-3">
+            <span class="pill pill-done">FEATURE</span>
+            <h2 class="font-display font-bold text-xl tracking-tight">历史方案时间线 · 查看配置 · 归因复盘 · 我已调仓</h2>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            落地 <code>todo.html</code> 🟡 强烈推荐档（#7–#11、#14）：每次生成方案落库为快照，前端时间线倒序展示，
+            可逐行「查看配置」看权重明细，可对任一方案做「归因复盘」回查 N 天后真实表现，并标记「我已调仓」。
+            归因为<strong>缓存优先</strong>——首次回查行情计算、<code>status=ok</code> 落库，再看直接命中。
+        </p>
+
+        <div class="overflow-x-auto">
+            <div class="min-w-[900px] flex items-center gap-2">
+                <span class="flow-node flow-done">生成方案</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">record_snapshot (advice_date)</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">GET /snapshots 时间线</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">GET /attribution 回查行情</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">PerformanceAttribution 缓存</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr><th>todo</th><th>新增能力</th><th>关键文件</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="pill pill-info">#9</span></td>
+                    <td><code>PortfolioSnapshot</code> 加 <code>advice_date</code>（归因锚点）/ <code>is_followed</code>；旧 SQLite 启动时 <code>_ensure_snapshot_columns</code> 自动补列 + 回填。</td>
+                    <td><code>memory/db_models.py</code></td>
+                </tr>
+                <tr>
+                    <td><span class="pill pill-info">#10</span></td>
+                    <td>新表 <code>PerformanceAttribution</code>（realized return/vol/sharpe + 各资产贡献 JSON）；<code>compute_attribution()</code> 从展示名抽真实 ticker、回查区间行情、算贡献度，状态机 <code>pending / unavailable / ok</code>，永不抛异常。</td>
+                    <td><code>memory/db_models.py</code> · <code>data_ops/attribution.py</code> · <code>data_ops/market_data.py</code>（<code>fetch_price_window</code>）</td>
+                </tr>
+                <tr>
+                    <td><span class="pill pill-info">#7</span></td>
+                    <td><code>GET /api/sessions/{uid}/snapshots</code> 历史方案列表（含 advice_date / is_followed / 权重）。</td>
+                    <td><code>main_api.py</code></td>
+                </tr>
+                <tr>
+                    <td><span class="pill pill-info">#11</span></td>
+                    <td><code>GET /api/sessions/{uid}/attribution/{sid}?horizon=7</code> 归因（缓存优先，<code>?force=true</code> 可强算）；<code>state_manager</code> 加 <code>get_or_compute_attribution</code> 等 helper。</td>
+                    <td><code>main_api.py</code> · <code>memory/state_manager.py</code></td>
+                </tr>
+                <tr>
+                    <td><span class="pill pill-info">#14</span></td>
+                    <td><code>POST /api/sessions/{uid}/snapshots/{sid}/follow</code> 标记/撤销"我已调仓"。</td>
+                    <td><code>main_api.py</code></td>
+                </tr>
+                <tr>
+                    <td><span class="pill pill-info">#8</span></td>
+                    <td>前端「🕐 历史方案时间线」面板：每行「查看配置」展开权重条（% + 金额）、「归因复盘」卡（收益/波动/Sharpe/贡献）、「我已调仓」按钮；生成方案后自动刷新。</td>
+                    <td><code>fin_asset_agent/index.html</code></td>
+                </tr>
+                <tr>
+                    <td><span class="pill pill-done">对齐</span></td>
+                    <td><code>/api/allocate</code> 也补落库快照，表单入口与 <code>/api/chat</code> 一样进时间线。</td>
+                    <td><code>main_api.py</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+                <div class="text-xs font-mono text-slate-400 uppercase mb-2">归因状态机</div>
+                <div class="code-block"><span class="com"># 建议未满 1 天</span>
+status = <span class="str">"pending"</span>
+<span class="com"># 类别级持仓(Cash_/Equities…)无个券价</span>
+status = <span class="str">"unavailable"</span>
+<span class="com"># 回查成功</span>
+status = <span class="str">"ok"</span>  <span class="com"># 落库缓存</span>
+realized_return = Σ wᵢ·(P_endᵢ/P_startᵢ - 1)</div>
+            </div>
+            <div>
+                <div class="text-xs font-mono text-slate-400 uppercase mb-2">「查看配置」权重明细</div>
+                <div class="code-block">最终权重 · 共 6 项 · 合计 100.0% · ￥500,000
+黄金ETF (518880.SS)  ████████ 52.5% ￥262,300
+国债ETF (511010.SS)  █████    33.2% ￥165,750
+沪深300ETF          ██       13.9% ￥69,250
+...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ FEATURE: Telegram 主动推送 ============ -->
+    <section class="panel p-6 space-y-4">
+        <div class="flex items-center gap-3">
+            <span class="pill pill-done">FEATURE</span>
+            <h2 class="font-display font-bold text-xl tracking-tight">Telegram 主动推送（每周复盘 · todo 🟢 #12/#13）</h2>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            把"每周主动推送"做成 Telegram bot 通道：到期方案自动算归因、生成一句话复盘建议，落 <code>PendingAdvice</code> 并推送到用户的 Telegram。
+            token 走环境变量 <code>TELEGRAM_BOT_TOKEN</code> 或 <code>config.yaml</code> 的 <code>telegram.bot_token</code>（已 gitignore），未配置则静默跳过、不影响主流程。
+        </p>
+
+        <div class="overflow-x-auto">
+            <div class="min-w-[900px] flex items-center gap-2">
+                <span class="flow-node flow-new">weekly_review_job / 手动触发</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">到期快照 + 归因</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">generate_review_advice</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">PendingAdvice 落库</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-done">send_telegram → 用户 TG</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr><th>层</th><th>新增能力</th><th>关键文件</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>配置/通道</td>
+                    <td><code>TelegramConfig</code>（token 走 env / <code>config.yaml</code>，未配则 <code>enabled=False</code> 静默跳过）；<code>send_telegram()</code> / <code>verify_bot()</code> 永不抛异常。</td>
+                    <td><code>config.py</code> · <code>data_ops/notifier.py</code> · <code>config.yaml</code>(gitignore)</td>
+                </tr>
+                <tr>
+                    <td>DB</td>
+                    <td><code>User.telegram_chat_id</code>（自动补列）+ 新表 <code>PendingAdvice</code>（trigger_reason / advice_summary / read_at / notify_status）。</td>
+                    <td><code>memory/db_models.py</code></td>
+                </tr>
+                <tr>
+                    <td>建议/任务</td>
+                    <td><code>generate_review_advice()</code> 模板化复盘文案（收益/最佳/最差 + 规则化建议）；<code>weekly_review_job()</code> 批量、<code>push_snapshot_review()</code> 单份；<code>state_manager</code> 加绑定/pending/到期查询 helper。</td>
+                    <td><code>data_ops/advice.py</code> · <code>data_ops/review_job.py</code> · <code>memory/state_manager.py</code></td>
+                </tr>
+                <tr>
+                    <td>后端 API</td>
+                    <td><code>GET /api/telegram/status</code>、<code>POST .../telegram</code>（绑定+测试消息）、<code>POST .../snapshots/{sid}/notify</code>、<code>GET .../pending</code>、<code>POST .../pending/{aid}/ack</code>、<code>POST /api/cron/weekly-review</code>。</td>
+                    <td><code>main_api.py</code></td>
+                </tr>
+                <tr>
+                    <td>cron</td>
+                    <td><code>scripts/cron_weekly_review.py</code>（<code>--force</code> / <code>--no-push</code>），挂系统计划任务每天跑一次。</td>
+                    <td><code>scripts/cron_weekly_review.py</code></td>
+                </tr>
+                <tr>
+                    <td>前端</td>
+                    <td>左栏 Telegram chat_id 绑定（含状态 @bot 自检 + 测试消息）；历史每行「🔔 推送」按钮；<code>📬</code> 未读徽章。</td>
+                    <td><code>fin_asset_agent/index.html</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="code-block"><span class="com"># 推送到用户 Telegram 的复盘消息示例</span>
+📊 FinAgent 复盘 · 方案 #6（资产配置）
+建议日：2026-05-27
+近 7 天真实表现：收益 +2.30%，年化波动 14.20%，Sharpe 0.31
+贡献最大：黄金ETF (518880.SS)；拖累最大：标普500ETF (513500.SS)
+💡 波动温和，维持现有配置即可，关注后续宏观/政策变化。</div>
+    </section>
+
+    <!-- ============ FEATURE: 统一配置 config.yaml ============ -->
+    <section class="panel p-6 space-y-4">
+        <div class="flex items-center gap-3">
+            <span class="pill pill-done">FEATURE</span>
+            <h2 class="font-display font-bold text-xl tracking-tight">统一本地配置 config.yaml · 前端预填 · API Key 脱敏</h2>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            把 LLM 与 Telegram 的默认值集中到 <code>fin_asset_agent/config.yaml</code>（唯一配置入口，已 gitignore；模板 <code>config.example.yaml</code>）。
+            <b>移除了 <code>telegram_secret.py</code> 这个 py 配置文件</b>，配置优先级简化为 <b>环境变量 &gt; config.yaml</b>。
+            前端启动经 <code>GET /api/config</code> 预填 API Key / 接口地址 / 模型 / Telegram chat_id 并可见，免每次刷新重输。
+        </p>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+                <div class="text-xs font-mono text-slate-400 uppercase mb-2">config.yaml</div>
+                <div class="code-block">llm:
+  api_key: <span class="str">"sk-..."</span>
+  base_url: <span class="str">"https://api.gpt.ge/v1"</span>
+  model: <span class="str">"deepseek-v4-pro"</span>
+telegram:
+  bot_token: <span class="str">"...:AAG..."</span>
+  chat_id: <span class="str">"123456789"</span></div>
+            </div>
+            <div>
+                <div class="text-xs font-mono text-slate-400 uppercase mb-2">API Key 脱敏（前端）</div>
+                <div class="code-block"><span class="com"># 平时显示首尾、中间打码</span>
+sk-i****FbC8
+<span class="com"># 聚焦输入框 → 展开全量；失焦 → 重新打码</span>
+<span class="com"># 真实值保管在 realApiKey，发请求始终用全量</span></div>
+            </div>
+        </div>
+        <table>
+            <thead><tr><th>层</th><th>改动</th><th>文件</th></tr></thead>
+            <tbody>
+                <tr><td>配置</td><td>新增 <code>config.yaml</code> + 模板；<code>config.py</code> 加 YAML 加载（pyyaml）+ <code>FrontendDefaults</code>；删除 <code>telegram_secret.py</code> 依赖。</td><td><code>config.py</code> · <code>config.yaml</code> · <code>config.example.yaml</code></td></tr>
+                <tr><td>后端</td><td>新增 <code>GET /api/config</code> 返回前端预填默认值（含 telegram.enabled）。</td><td><code>main_api.py</code></td></tr>
+                <tr><td>前端</td><td><code>loadDefaults()</code> 预填各字段；API Key 输入框改 text 可见 + <code>maskSecret</code> 脱敏 + focus/blur 展开重打码；统一 <code>getApiKey()</code> 取真实值。</td><td><code>fin_asset_agent/index.html</code></td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- ============ VERIFY ============ -->
+    <section class="panel p-6 space-y-4">
+        <div class="flex items-center gap-3">
+            <span class="pill pill-info">VERIFY</span>
+            <h2 class="font-display font-bold text-xl tracking-tight">验证记录</h2>
+        </div>
+        <div class="code-block">cd d:\Coding\fin-system\fin_asset_agent
+..\.venv\Scripts\python.exe -m pytest tests -q
+
+229 passed, 1 failed     <span class="com"># 新增 31 条（归因 14 + Telegram 17）；唯一失败为既有日期边界测试</span></div>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            <b>单测</b>：<code>test_attribution.py</code>（14 条）覆盖归因三态/贡献度/缓存/端点；
+            <code>test_telegram.py</code>（17 条）覆盖 notifier（ok/skip/api 错/异常）、advice 文案、pending CRUD、到期查询、
+            <code>weekly_review_job</code> / <code>push_snapshot_review</code> 与 6 个推送端点（全程 mock，不触网）。
+            既有回归全绿；Critic 不报错不空转、<code>call_deepseek</code> 数组解包、<code>base_url / model</code> 自定义与回退均通过。
+        </p>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            <b>Telegram 真实联调</b>（@zhtinfobot）：<code>getMe</code> ✓、绑定测试消息 ✓、单份 <code>notify</code> 推送 ✓、
+            <code>weekly_review_job(force)</code> 批量推送 8 条 ✓——消息真实送达。归因因本机无行情走 <code>pending</code> 文案，
+            推送通道本身验证通过；归因 <code>ok</code> 文案以 mock 单测覆盖。
+        </p>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            <b>真实联调</b>（<code>https://api.gpt.ge/v1</code> · <code>deepseek-v4-pro</code>）：完整 chat 管线 89s 跑通——
+            意图路由 → LLM 选品（命中"多配黄金"诉求）→ 沙箱 → <code>Critic APPROVE 85</code> → 落库快照，
+            全程用自定义模型；<b>顺带验证两个 bug 修复在真实链路生效</b>（无协方差 (0,) 报错、无 list 报错、无空转）。
+            新端点实测：历史列表 ✓ / 归因 <code>pending</code> ✓ / follow 回写 ✓。
+            <span class="text-slate-400">注：该环境连不上 akshare/yfinance，行情走离线兜底导致 MVO 集中、被硬门禁正确拒签（<code>risk=FAILED</code>）；
+            归因 <code>ok</code> 路径以 mock 行情单测验证（工行 +10%×0.6 + 黄金 −2%×0.4 = +5.2%）。</span>
+        </p>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            既有失败用例：<code>test_summary_adds_freshness_tags</code> —— 对运行日期敏感的新闻 freshness 边界测试，非本次回归。
+        </p>
+    </section>
+
+    <!-- ============ FEATURE: 历史区间净值回测 ============ -->
+    <section class="panel p-6 space-y-4">
+        <div class="flex items-center gap-3">
+            <span class="pill pill-done">FEATURE</span>
+            <h2 class="font-display font-bold text-xl tracking-tight">历史区间净值回测（模拟年化收益）</h2>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            把任意历史方案（含当前最新策略）的权重，套在 <b>「过去 N 天」的真实行情</b>上做固定权重买入持有回测，
+            估算大致年化收益。原 <code>backtest_engine.run_backtest</code>（净值曲线 / 年化 / 最大回撤 / Calmar）此前只在单测里用、
+            <b>无任何 API 入口</b>；本次把它接到端点 + 前端按钮。与<b>归因复盘</b>区别：归因看「建议日之后已发生」的表现（可缓存），
+            回测看「截至今天的过去 N 天」（窗口随日期滑动，<b>不缓存</b>）。
+        </p>
+
+        <div class="overflow-x-auto">
+            <div class="min-w-[900px] flex items-center gap-2">
+                <span class="flow-node flow-new">前端 净值回测按钮 + 近30/60/90天</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">GET /api/.../backtest/{id}</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">get_snapshot_backtest</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">compute_backtest 拉行情</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-done">run_backtest 净值曲线</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr><th>层</th><th>改动</th><th>关键文件</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>计算层（新）</td>
+                    <td><code>compute_backtest()</code>：抽真实 ticker（复用 attribution 逻辑）→ 拉过去 window_days 收盘价 → 调 <code>run_backtest</code>，剔除无行情标的并归一化；行情失败永不抛异常（<code>status=unavailable</code>）。</td>
+                    <td><code>data_ops/backtest_review.py</code></td>
+                </tr>
+                <tr>
+                    <td>编排层</td>
+                    <td><code>get_snapshot_backtest()</code>：按 snapshot_id 加载权重（FAILED 方案回退 <code>base_weights</code>），本金用快照 <code>total_wealth</code>；不缓存。</td>
+                    <td><code>memory/state_manager.py</code></td>
+                </tr>
+                <tr>
+                    <td>后端 API</td>
+                    <td>新增 <code>GET /api/sessions/{uuid}/backtest/{snapshot_id}?window=30&amp;rebalance=none</code>。</td>
+                    <td><code>fin_asset_agent/main_api.py</code></td>
+                </tr>
+                <tr>
+                    <td>前端</td>
+                    <td>历史方案每行新增「近30/60/90天」下拉 + <code>净值回测</code>按钮；结果卡片显示模拟年化 / 区间收益 / 最大回撤 / Sharpe + 净值迷你曲线（内联 SVG），并标注「线性外推仅供参考」。</td>
+                    <td><code>fin_asset_agent/index.html</code></td>
+                </tr>
+                <tr>
+                    <td>测试（新）</td>
+                    <td>6 个用例：类别级持仓 / 空行情 → unavailable；mock 行情 → ok 且净值起点=本金；缺行情标的剔除；编排层缺快照 + total_wealth 透传。<b>全部通过</b>。</td>
+                    <td><code>fin_asset_agent/tests/test_backtest_review.py</code></td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            <b>离线模拟兜底</b>：真实行情拉不到时（断网 / 数据源被墙 / 系统时钟在未来导致窗口无数据），
+            对正确的 <code>[today-window, today]</code> 业务日窗口生成<b>确定性</b>模拟净值（按 ticker 派生稳定种子，可复现），
+            返回 <code>simulated=true</code>，前端打「<b>离线模拟 · 无参考意义</b>」琥珀徽章。展示窗口取实际有行情的首/末交易日
+            （今天未收盘时末日自然落在上一交易日，如 today=6-07 → 5-31~6-06）。可用 <code>allow_simulated=False</code> 关掉退回 unavailable。
+        </p>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            <b>验证</b>：新测试 8/8 通过（含模拟兜底 + 可复现 + 真实行情不走模拟）；既有 <code>test_attribution</code> / <code>test_backtest_engine</code> 无回归；
+            <code>main_api</code> 导入正常、路由已注册。mock 行情 30 天（工行 +10%×0.6 + 黄金 −2%×0.4）区间收益落在 +5% 量级。
+        </p>
+    </section>
+
+    <!-- ============ FEATURE: 系统代理自动检测 + 开关 ============ -->
+    <section class="panel p-6 space-y-4">
+        <div class="flex items-center gap-3">
+            <span class="pill pill-done">FEATURE</span>
+            <h2 class="font-display font-bold text-xl tracking-tight">系统代理自动检测 + 显式开关（自动连接）</h2>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed">
+            新增运行时代理管理器 <code>net_proxy</code>：启动用 <code>urllib.getproxies()</code> 自动探测系统代理
+            （Windows 读注册表 + 环境变量），<b>检测到则默认开启</b>。前端在 Telegram(TG userid) 绑定下方加了一个显式开关——
+            打开即「自动连接」走系统代理。核心分流：<b>外网服务</b>（Telegram <code>api.telegram.org</code> / yfinance 海外行情）按开关走代理；
+            <b>海外行情</b>（yfinance）走系统代理；<b>国内 eastmoney 行情直连优先、代理兜底</b>——国内站走 Clash 常被路由到境外节点导致连接重置，且 Windows 下 Clash 设的系统代理（注册表）会让 requests 即便清了环境变量也走代理，故 <code>force_direct()</code> 用 <code>NO_PROXY</code> 域名后缀显式穿透，保证对 eastmoney/sina 真直连。
+        </p>
+
+        <div class="overflow-x-auto">
+            <div class="min-w-[900px] flex items-center gap-2">
+                <span class="flow-node flow-new">启动 detect_system_proxy()</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">运行时 enabled/url 状态</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">前端开关 GET/POST /api/proxy</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-new">Telegram/海外: apply_proxy 走代理</span>
+                <span class="text-slate-400">-&gt;</span>
+                <span class="flow-node flow-done">eastmoney: 走 Clash → 干净DNS+China规则 DIRECT</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr><th>层</th><th>改动</th><th>关键文件</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>代理管理（新）</td>
+                    <td><code>detect_system_proxy()</code> 自动探测；运行时 <code>enabled/url</code> 开关；<code>build_session()</code>（关闭时 <code>trust_env=False</code> 真直连，避免残留 env 让「关」失效）；<code>force_direct()</code> 上下文临时摘除代理 env。</td>
+                    <td><code>data_ops/net_proxy.py</code></td>
+                </tr>
+                <tr>
+                    <td>行情</td>
+                    <td><b>国内行情东财→新浪双源兜底，统一走系统代理（Clash）</b>：行情走 Clash（干净 DNS+China 规则）；python 原生直连被 DNS 污染 RST。实测 eastmoney 经 Clash 间歇性被掐（socket 通但 CONNECT 被 RemoteDisconnected），故 <code>_fetch_china_close()</code> 东财失败即转<b>新浪源</b>（命中 <code>sina.com.cn</code>，不同主机，实测稳定 18 行）：ETF→<code>fund_etf_hist_sina</code>、个股→<code>stock_zh_a_daily</code>，新浪全历史按区间切片归一。海外 yfinance 走 <code>apply_proxy()</code>。修四个取数 bug：① yfinance <code>proxy=</code> 参数本机版本不支持（移除）；② 新版 MultiIndex 列致 <code>df['Close']</code> 取 (N,1) 二维 → <code>_extract_close_series()</code> 压一维；③ <b>ETF 被当个股查返回空</b> → <code>_is_china_etf()</code> 分流 <code>fund_etf_hist_em</code>；④ 批量拉取代理偶发拒绝 → 重试退避。</td>
+                    <td><code>data_ops/market_data.py</code></td>
+                </tr>
+                <tr>
+                    <td>Telegram</td>
+                    <td><code>send_telegram</code> / <code>verify_bot</code> 改用 <code>net_proxy.build_session()</code>，开关打开即走代理访问 <code>api.telegram.org</code>。</td>
+                    <td><code>data_ops/notifier.py</code></td>
+                </tr>
+                <tr>
+                    <td>后端 API</td>
+                    <td>新增 <code>GET /api/proxy</code>（检测值+开关+生效URL）与 <code>POST /api/proxy</code>（设开关/URL/redetect）；<code>/api/config</code> 带上 proxy 块供前端预填。</td>
+                    <td><code>fin_asset_agent/main_api.py</code></td>
+                </tr>
+                <tr>
+                    <td>前端</td>
+                    <td>TG 绑定下方新增「系统代理」开关卡片：展示检测到的代理地址、emerald 滑块开关、状态文案；切换即 POST 并重测 bot 连通性。</td>
+                    <td><code>fin_asset_agent/index.html</code></td>
+                </tr>
+                <tr>
+                    <td>测试（新）</td>
+                    <td>7 条：env 检测 / 开关生效 / 开但无URL=直连 / 关闭 trust_env=False / 开启显式代理 / force_direct 摘除+恢复 / 状态结构。<b>全过</b>；同步修好 3 条 Telegram 用例（改 mock build_session）。</td>
+                    <td><code>fin_asset_agent/tests/test_net_proxy.py</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- ============ NOTE ============ -->
+    <section class="panel p-6 space-y-4">
+        <div class="flex items-center gap-3">
+            <span class="pill pill-next">NOTE</span>
+            <h2 class="font-display font-bold text-xl tracking-tight">已知约束</h2>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="border border-amber-200 bg-amber-50 rounded-lg p-4">
+                <h3 class="font-display font-bold text-amber-900 mb-2">Token 计费表只认两个模型名</h3>
+                <p class="text-sm text-amber-900 leading-relaxed">
+                    <code>config.py</code> 的 <code>pricing</code> 仅含 <code>deepseek-chat / deepseek-reasoner</code>。
+                    换成其它模型 ID 时，<code>estimate_cost()</code> 回退按 <code>deepseek-chat</code> 价估算，费用数字会偏差
+                    （不影响功能）。如需精确计费，可把定价表也做成可配置。
+                </p>
+            </div>
+            <div class="border border-rose-200 bg-rose-50 rounded-lg p-4">
+                <h3 class="font-display font-bold text-rose-900 mb-2">行情通道：东财→新浪双源 + 回测可降级模拟</h3>
+                <p class="text-sm text-rose-900 leading-relaxed">
+                    回测/归因/选品的国内行情统一走系统代理（Clash），<b>东财(em) 失败自动转新浪(sina)</b>。
+                    实测本机网络下 eastmoney 经 Clash 间歇性被掐（CONNECT 被 RemoteDisconnected），而<b>新浪源稳定可达</b>
+                    （510300/518880/600519 实拉 18 行真实数据 ✅）。海外 yfinance 经代理已能拉真实数据。
+                    <b>运行前提：Clash 开 + 前端代理开关打开</b>（TUN 模式更稳）。两源都拉不到时：归因显示 pending/unavailable（不造假）；
+                    净值回测降级为 <code>simulated=true</code> 离线模拟，前端标「无参考意义」。
+                </p>
+            </div>
+            <div class="border border-amber-200 bg-amber-50 rounded-lg p-4">
+                <h3 class="font-display font-bold text-amber-900 mb-2">回测「模拟年化」为线性外推</h3>
+                <p class="text-sm text-amber-900 leading-relaxed">
+                    短窗口（如近 30 天≈22 个交易日）的区间收益按 <code>252/n</code> 放大到一年，数字波动极大、
+                    <b>不代表未来表现</b>，仅作直觉参考；卡片已显式标注。需稳健评估请拉长窗口或看区间收益本身。
+                </p>
+            </div>
+            <div class="border border-amber-200 bg-amber-50 rounded-lg p-4">
+                <h3 class="font-display font-bold text-amber-900 mb-2">json_object 兼容性</h3>
+                <p class="text-sm text-amber-900 leading-relaxed">
+                    自定义 <code>base_url</code> 指向的第三方接口若不支持 <code>response_format=json_object</code>，
+                    结构化调用可能返回非标准结果；已加数组解包容错，但仍建议优先选支持 JSON 模式的兼容服务。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 font-mono py-8 border-t border-slate-200">
+        FinAgent OS - 6-3 change log - custom LLM · review bugfix · history timeline + attribution · telegram push · config.yaml
+    </footer>
+</div>
+</body>
+</html>
