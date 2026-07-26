@@ -35,6 +35,24 @@ FinAgentOS/
 
 运行时页面是 `fin_asset_agent/index.html`，由 FastAPI 的 `/` 路径直接提供。
 
+## 运行效果
+
+### 配置报告
+
+<img src="./finagent-live-report.png" alt="FinAgent OS 配置报告" width="100%">
+
+### 资产配置
+
+<img src="./finagent-live-allocation.png" alt="FinAgent OS 资产配置结果" width="100%">
+
+### 风险分析
+
+<img src="./finagent-live-risk.png" alt="FinAgent OS 风险分析" width="100%">
+
+### Agent 复核与模型成本
+
+<img src="./finagent-live-critic-cost.png" alt="FinAgent OS Agent 复核与模型成本" width="100%">
+
 ## 本地运行（隔离 Python 环境）
 
 要求 Python 3.10+。不要把依赖安装到系统 Python；在仓库根目录创建项目专用虚拟环境。
