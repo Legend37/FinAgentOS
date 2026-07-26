@@ -39,19 +39,19 @@ FinAgentOS/
 
 ### 配置报告
 
-<img src="./finagent-live-report.png" alt="FinAgent OS 配置报告" width="100%">
+<img src="./finagent-live-report.jpg" alt="FinAgent OS 配置报告" width="100%">
 
 ### 资产配置
 
-<img src="./finagent-live-allocation.png" alt="FinAgent OS 资产配置结果" width="100%">
+<img src="./finagent-live-allocation.jpg" alt="FinAgent OS 资产配置结果" width="100%">
 
 ### 风险分析
 
-<img src="./finagent-live-risk.png" alt="FinAgent OS 风险分析" width="100%">
+<img src="./finagent-live-risk.jpg" alt="FinAgent OS 风险分析" width="100%">
 
 ### Agent 复核与模型成本
 
-<img src="./finagent-live-critic-cost.png" alt="FinAgent OS Agent 复核与模型成本" width="100%">
+<img src="./finagent-live-critic-cost.jpg" alt="FinAgent OS Agent 复核与模型成本" width="100%">
 
 ## 本地运行（隔离 Python 环境）
 
